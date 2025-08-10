@@ -1,6 +1,9 @@
 (function(){
   const els = {
     logo: document.getElementById('brandLogo'),
+    appHeader: document.querySelector('header.app-header'),
+    menuToggle: document.getElementById('menuToggle'),
+    headerControls: document.getElementById('headerControls'),
     baseUrlInput: document.getElementById('baseUrlInput'),
     useProxyChk: document.getElementById('useProxyChk'),
     saveBtn: document.getElementById('saveBtn'),
@@ -63,6 +66,30 @@
     els.intervalSelect.value = String(store.interval || 10);
     updateApiLink();
 
+    // Hamburger menu toggle for mobile
+    if(els.menuToggle && els.appHeader && els.headerControls){
+      els.menuToggle.addEventListener('click', function(e){
+        const open = !els.appHeader.classList.contains('menu-open');
+        els.appHeader.classList.toggle('menu-open', open);
+        els.menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if(open){
+          // Focus first input in menu for accessibility
+          setTimeout(()=>{
+            const inp = els.headerControls.querySelector('input,select,button');
+            if(inp) inp.focus();
+          }, 100);
+        }
+      });
+      // Close menu when clicking outside controls (on mobile)
+      document.addEventListener('click', function(e){
+        if(window.innerWidth > 720) return; // Only on mobile
+        if(!els.appHeader.classList.contains('menu-open')) return;
+        if(e.target === els.menuToggle || els.headerControls.contains(e.target)) return;
+        els.appHeader.classList.remove('menu-open');
+        els.menuToggle.setAttribute('aria-expanded', 'false');
+      });
+    }
+
     // Bind controls
     els.saveBtn.addEventListener('click', ()=>{
       const val = els.baseUrlInput.value.trim();
@@ -77,8 +104,20 @@
       updateApiLink();
       setStatus('Saved.');
       refresh();
+      // Close menu on mobile after save
+      if(window.innerWidth <= 720 && els.appHeader.classList.contains('menu-open')){
+        els.appHeader.classList.remove('menu-open');
+        els.menuToggle.setAttribute('aria-expanded', 'false');
+      }
     });
-    els.refreshBtn.addEventListener('click', ()=> refresh());
+    els.refreshBtn.addEventListener('click', ()=> {
+      refresh();
+      // Close menu on mobile after refresh
+      if(window.innerWidth <= 720 && els.appHeader.classList.contains('menu-open')){
+        els.appHeader.classList.remove('menu-open');
+        els.menuToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
     els.autoRefreshChk.addEventListener('change', ()=>{
       store.autoRefresh = !!els.autoRefreshChk.checked;
       setupAutoRefresh();

@@ -16,10 +16,10 @@
         <h1>Dropshipper</h1>
       </div>
     </div>
-    <div class="controls">
+    <button id="menuToggle" class="menu-toggle icon-btn" aria-label="Open menu" aria-expanded="false" aria-controls="headerControls">☰</button>
+    <div class="controls" id="headerControls">
       <label class="field">
-        <span>Base API URL</span>
-        <input id="baseUrlInput" type="url" placeholder="http://localhost:25566" />
+        <input id="baseUrlInput" type="url" placeholder="Base API URL" />
       </label>
       <label class="toggle">
         <input id="useProxyChk" type="checkbox" />

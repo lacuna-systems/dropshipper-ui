@@ -99,7 +99,7 @@ jobs:
       contents: read
       packages: write
     name: Build and Push Docker Image
-    uses: .github/workflows/build-image.yaml
+    uses: ./.github/workflows/build-image.yaml
     with:
       version: "${{ needs.release.outputs.version || '0.0.0' }}"
     needs: release
@@ -125,5 +125,5 @@ jobs:
       contents: read
       packages: write
     name: Publish Helm Chart
-    uses: .github/workflows/publish-chart.yaml
+    uses: ./.github/workflows/publish-chart.yaml
     needs: release-branch

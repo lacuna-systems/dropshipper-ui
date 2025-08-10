@@ -88,7 +88,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
         with:
           upload_assets: '.assets/dropshipper-ui-linux-amd64 .assets/dropshipper-ui-linux-arm64 .assets/dropshipper-ui-windows-amd64.exe .assets/dropshipper-ui-darwin-amd64 .assets/dropshipper-ui-darwin-arm64'
-          version_metadata_path: version.go
     outputs:
       version: ${{ steps.bump_version.outputs.release_version }}
   build-and-push:

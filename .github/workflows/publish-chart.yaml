@@ -12,8 +12,9 @@ jobs:
     name: Publish Chart
     steps:
       - uses: actions/checkout@v4
-      - uses: J12934/helm-gh-pages-action@master
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
-          access-token: ${{ secrets.GITHUB_TOKEN }}
-          charts-folder: ./charts
-          deploy-branch: release
+          pages_branch: release

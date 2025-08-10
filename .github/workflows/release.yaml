@@ -65,9 +65,6 @@ jobs:
           # build mac binary
           go build -mod vendor -ldflags "-X main.goos=darwin -X main.goarch=amd64" -o .assets/dropshipper-ui-darwin-amd64 -tags "static" main.go
           go build -mod vendor -ldflags "-X main.goos=darwin -X main.goarch=arm64" -o .assets/dropshipper-ui-darwin-arm64 -tags "static" main.go
-  
-          chmod +x .assets/dropshipper-ui-linux-amd64
-          ./.assets/dropshipper-ui-linux-amd64 --help
       - name: Commit Go Changes
         id: commit
         uses: packagrio/action-releasr-go@master

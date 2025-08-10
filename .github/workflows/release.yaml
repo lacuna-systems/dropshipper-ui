@@ -1,0 +1,115 @@
+name: Release
+# This workflow is triggered manually
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump_type:
+        description: 'Version Bump Type'
+        required: true
+        type: choice
+        default: patch
+        options:
+          - major
+          - minor
+          - patch
+jobs:
+  release:
+    permissions:
+      contents: write
+      packages: write
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bump Go version
+        id: bump_version
+        uses: packagrio/action-bumpr-go@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version_bump_type: ${{ github.event.inputs.version_bump_type }}
+          version_metadata_path: version.go
+      - name: Bump Chart version
+        id: bump_version
+        uses: packagrio/action-bumpr-generic@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version_bump_type: ${{ github.event.inputs.version_bump_type }}
+          version_metadata_path: charts/dropshipper-ui/Chart.yaml
+          generic_version_template: 'version: "%d.%d.%d"'
+          generic_merge_version_file: true
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+      - name: Build
+        run: |
+          git config --global --add safe.directory /__w/dropshipper-ui/dropshipper-ui
+          go get -u ./...
+          go build -v ./...
+      - name: Build Artifacts
+        run: |
+          go mod vendor
+  
+          # build linux binary
+          mkdir -p ./.assets
+          go build -mod vendor -ldflags "-X main.goos=linux -X main.goarch=amd64" -o .assets/dropshipper-ui-linux-amd64 -tags "static" main.go
+          go build -mod vendor -ldflags "-X main.goos=linux -X main.goarch=arm64" -o .assets/dropshipper-ui-linux-arm64 -tags "static" main.go
+          
+          # build windows binary
+          go build -mod vendor -ldflags "-X main.goos=linux -X main.goarch=amd64" -o .assets/dropshipper-ui-windows-amd64.exe -tags "static" main.go
+  
+          # build mac binary
+          go build -mod vendor -ldflags "-X main.goos=darwin -X main.goarch=amd64" -o .assets/dropshipper-ui-darwin-amd64 -tags "static" ain.go
+          go build -mod vendor -ldflags "-X main.goos=darwin -X main.goarch=arm64" -o .assets/dropshipper-ui-darwin-arm64 -tags "static" main.go
+  
+          chmod +x .assets/dropshipper-ui-linux-amd64
+          ./.assets/dropshipper-ui-linux-amd64 --help
+      - name: Commit Go Changes
+        id: commit
+        uses: packagrio/action-releasr-go@master
+        env:
+          # This is necessary in order to push a commit to the repo
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
+        with:
+          version_metadata_path: version.go
+      - name: Commit Chart Changes
+        id: bump_version
+        uses: packagrio/action-bumpr-generic@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version_metadata_path: charts/dropshipper-ui/Chart.yaml
+          generic_version_template: 'version: "%d.%d.%d"'
+          generic_merge_version_file: true
+      - name: Publish Release
+        id: publish
+        uses: packagrio/action-publishr-go@master
+        env:
+          # This is necessary in order to push a commit to the repo
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
+        with:
+          upload_assets: '.assets/dropshipper-ui-linux-amd64 .assets/dropshipper-ui-linux-arm64 .assets/dropshipper-ui-windows-amd64.exe .assets/dropshipper-ui-darwin-amd64 .assets/dropshipper-ui-darwin-arm64'
+          version_metadata_path: version.go
+    outputs:
+      version: ${{ steps.bump_version.outputs.release_version }}
+  build-and-push:
+    permissions:
+      contents: read
+      packages: write
+    name: Build and Push Docker Image
+    uses: .github/workflows/build-image.yaml
+    needs: release
+    with:
+      version: ${{ needs.release.outputs.version }}
+  publish-chart:
+    permissions:
+      contents: read
+      packages: write
+    name: Publish Helm Chart
+    uses: .github/workflows/publish-chart.yaml
+    needs: release

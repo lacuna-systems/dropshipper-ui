@@ -100,7 +100,8 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-	log.Printf("dropshipper UI listening on http://localhost:%s", port)
+	log.Printf("Starting dropshipper UI v%s", VERSION)
+	log.Printf("Listening on http://localhost:%s", port)
 	log.Fatal(server.ListenAndServe())
 }
 

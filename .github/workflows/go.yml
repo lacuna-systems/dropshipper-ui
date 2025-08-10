@@ -1,0 +1,66 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+
+    - name: Build
+      run: |
+        go get -u ./...
+        go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Build Artifacts
+      env:
+        GOOS: linux
+        GOARCH: amd64
+      run: |
+        go mod vendor
+
+        # build linux binary
+        go build -mod vendor -ldflags "-X main.goos=linux -X main.goarch=amd64" -o dropshipper-ui-linux-amd64 -tags "static" main.go
+        go build -mod vendor -ldflags "-X main.goos=linux -X main.goarch=arm64" -o dropshipper-ui-linux-arm64 -tags "static" main.go
+        
+        # build windows binary
+        go build -mod vendor -ldflags "-X main.goos=linux -X main.goarch=amd64" -o dropshipper-ui-windows-amd64.exe -tags "static" main.go
+
+        # build mac binary
+        go build -mod vendor -ldflags "-X main.goos=darwin -X main.goarch=amd64" -o dropshipper-ui-darwin-amd64 -tags "static" main.go
+        go build -mod vendor -ldflags "-X main.goos=darwin -X main.goarch=arm64" -o dropshipper-ui-darwin-arm64 -tags "static" main.go
+
+        chmod +x dropshipper-ui-linux-amd64
+        ./dropshipper-ui-linux-amd64 --help
+
+    - name: Archive Linux Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-binary
+        path: dropshipper-ui-linux-*
+    - name: Archive Windows Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-binary
+        path: dropshipper-ui-windows-*
+    - name: Archive Mac Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: mac-binary
+        path: dropshipper-ui-darwin-*

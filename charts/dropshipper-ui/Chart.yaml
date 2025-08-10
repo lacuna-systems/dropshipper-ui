@@ -1,0 +1,10 @@
+apiVersion: v2
+name: dropshipper-ui
+version: 0.1.0
+description: A Helm chart for deploying Dropshipper UI
+type: application
+
+maintainers:
+  - name: Lacuna
+    email: contact@lacuna-systems.se
+

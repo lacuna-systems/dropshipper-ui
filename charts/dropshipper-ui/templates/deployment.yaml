@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dropshipper-ui.fullname" . }}
+  labels:
+    app: {{ include "dropshipper-ui.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "dropshipper-ui.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "dropshipper-ui.name" . }}
+    spec:
+      containers:
+        - name: dropshipper-ui
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: API_BASE_URL
+              value: "{{ .Values.env.API_BASE_URL }}"
+            - name: PORT
+              value: "{{ .Values.env.PORT }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+

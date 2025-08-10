@@ -16,7 +16,8 @@
     year: document.getElementById('year'),
     outputModal: document.getElementById('outputModal'),
     modalOutput: document.getElementById('modalOutput'),
-    modalClose: document.getElementById('modalClose')
+    modalClose: document.getElementById('modalClose'),
+    version: document.getElementById('version'),
   };
 
   const store = {
@@ -40,6 +41,13 @@
       const res = await fetch('/config', { cache: 'no-store' });
       if(res.ok){
         const cfg = await res.json();
+        // Set version if present
+        if(cfg.version && els.version) {
+          els.version.textContent = `v${cfg.version}`;
+          console.log(`Gossip UI v${cfg.version}`);
+        } else {
+          console.warn('Server config does not contain version info');
+        }
         return cfg && cfg.baseApiUrl ? cfg.baseApiUrl : '';
       }
     } catch(_) {}
@@ -59,7 +67,10 @@
   async function init(){
     // Initialize inputs from storage or server config
     let base = store.baseUrl;
-    if(!base){ base = await loadServerConfig(); store.baseUrl = base; }
+    let serverConfig = await loadServerConfig();
+    if(!base) {
+      base = serverConfig; store.baseUrl = base;
+    }
     els.baseUrlInput.value = base;
     els.useProxyChk.checked = store.useProxy;
     els.autoRefreshChk.checked = store.autoRefresh;

@@ -17,6 +17,7 @@ import (
 
 type Config struct {
 	BaseAPIURL string `json:"baseApiUrl"`
+	Version    string `json:"version,omitempty"`
 }
 
 func getBaseAPIURL() string {
@@ -48,7 +49,7 @@ func main() {
 	// Config endpoint
 	mux.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(Config{BaseAPIURL: getBaseAPIURL()})
+		_ = json.NewEncoder(w).Encode(Config{BaseAPIURL: getBaseAPIURL(), Version: version.VERSION})
 	})
 
 	// Simple proxy for /gossip to avoid CORS issues

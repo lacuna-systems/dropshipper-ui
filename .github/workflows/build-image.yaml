@@ -40,7 +40,6 @@ jobs:
             type=semver,pattern={{version}}, value=${{ github.event.inputs.version }}
             type=semver,pattern={{major}}, value=${{ github.event.inputs.version }}
             type=semver,pattern={{major}}.{{minor}}, value=${{ github.event.inputs.version }}
-          flavor: latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

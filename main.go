@@ -1,6 +1,7 @@
 package main
 
 import (
+	"dropshipper-ui/pkg/version"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -100,7 +101,7 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-	log.Printf("Starting dropshipper UI v%s", VERSION)
+	log.Printf("Starting dropshipper UI v%s", version.VERSION)
 	log.Printf("Listening on http://localhost:%s", port)
 	log.Fatal(server.ListenAndServe())
 }

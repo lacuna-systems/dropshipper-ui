@@ -31,7 +31,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version_bump_type: ${{ github.event.inputs.version_bump_type }}
-          version_metadata_path: version.go
       - name: Bump Chart version
         id: bump_version
         uses: packagrio/action-bumpr-generic@master
@@ -75,8 +74,6 @@ jobs:
         env:
           # This is necessary in order to push a commit to the repo
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
-        with:
-          version_metadata_path: version.go
       - name: Commit Chart Changes
         id: bump_version
         uses: packagrio/action-bumpr-generic@master

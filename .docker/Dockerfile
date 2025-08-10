@@ -2,7 +2,7 @@ FROM golang:alpine AS builder
 WORKDIR /app
 COPY assets/ ./assets/
 COPY web/ ./web/
-COPY go.mod main.go ./
+COPY go.mod main.go version.go ./
 
 RUN go get -u ./...
 RUN go build -v ./...

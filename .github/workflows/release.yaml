@@ -100,9 +100,9 @@ jobs:
       packages: write
     name: Build and Push Docker Image
     uses: .github/workflows/build-image.yaml
-    needs: release
     with:
-      version: ${{ needs.release.outputs.version }}
+      version: "${{ needs.release.outputs.version }}"
+    needs: release
   publish-chart:
     permissions:
       contents: read

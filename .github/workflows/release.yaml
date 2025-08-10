@@ -122,8 +122,8 @@ jobs:
           git push --set-upstream origin release --force
   publish-chart:
     permissions:
-      contents: read
-      packages: write
+      contents: write
+      pages: write
     name: Publish Helm Chart
     uses: ./.github/workflows/publish-chart.yaml
     needs: release-branch

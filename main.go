@@ -1,10 +1,10 @@
 package main
 
 import (
-	"dropshipper-ui/pkg/version"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lacuna-systems/dropshipper-ui/pkg/version"
 	"io"
 	"log"
 	"net/http"

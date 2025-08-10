@@ -1,8 +1,11 @@
 FROM golang:alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache git ca-certificates
 COPY assets/ ./assets/
 COPY web/ ./web/
-COPY go.mod main.go version.go ./
+COPY ./pkg ./pkg/
+COPY go.mod main.go ./
+RUN ls -lsa
 
 RUN go get -u ./...
 RUN go build -v ./...

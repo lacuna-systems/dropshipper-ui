@@ -36,9 +36,9 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/dropshipper-ui
           tags: |
             type=ref,event=branch
-            type=semver,pattern={{version}}, value=${{ github.event.inputs.version }}
-            type=semver,pattern={{major}}, value=${{ github.event.inputs.version }}
-            type=semver,pattern={{major}}.{{minor}}, value=${{ github.event.inputs.version }}
+            type=semver,pattern={{version}},value=${{ github.event.inputs.version }}
+            type=semver,pattern={{major}},value=${{ github.event.inputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.inputs.version }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

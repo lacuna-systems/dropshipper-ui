@@ -17,7 +17,7 @@ jobs:
     permissions:
       contents: write
       packages: write
-    name: Build
+    name: Build and Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
         with:
           version_bump_type: ${{ github.event.inputs.version_bump_type }}
           version_metadata_path: charts/dropshipper-ui/Chart.yaml
-          generic_version_template: 'version: "%d.%d.%d"'
+          generic_version_template: 'version: %d.%d.%d'
           generic_merge_version_file: true
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -81,7 +81,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version_metadata_path: charts/dropshipper-ui/Chart.yaml
-          generic_version_template: 'version: "%d.%d.%d"'
+          generic_version_template: 'version: %d.%d.%d'
           generic_merge_version_file: true
       - name: Publish Release
         id: publish

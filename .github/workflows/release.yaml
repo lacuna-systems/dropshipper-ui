@@ -101,7 +101,7 @@ jobs:
     name: Build and Push Docker Image
     uses: .github/workflows/build-image.yaml
     with:
-      version: "${{ needs.release.outputs.version }}"
+      version: "${{ needs.release.outputs.version || '0.0.0' }}"
     needs: release
   release-branch:
     name: Release Branch

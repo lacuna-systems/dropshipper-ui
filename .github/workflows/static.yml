@@ -6,7 +6,7 @@ on:
   push:
     branches: ["release"]
     paths:
-      - .release/
+      - '.release/*'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -38,8 +38,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.release'
+          path: '.release/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

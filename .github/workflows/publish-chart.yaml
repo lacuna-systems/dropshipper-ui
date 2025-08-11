@@ -18,3 +18,4 @@ jobs:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
           pages_branch: release
+          packages_with_index: true

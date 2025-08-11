@@ -113,8 +113,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-          git checkout -B release
+          git checkout release
+          git merge main --no-edit
           git push --set-upstream origin release --force
   publish-chart:
     permissions:

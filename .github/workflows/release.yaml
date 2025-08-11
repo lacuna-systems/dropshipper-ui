@@ -127,3 +127,7 @@ jobs:
     with:
       version: "${{ needs.release.outputs.version }}"
     needs: release-branch
+  publish-gh-pages:
+    name: Publish GitHub Pages
+    uses: ./.github/workflows/static.yaml
+    needs: publish-chart

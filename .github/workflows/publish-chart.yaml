@@ -29,5 +29,5 @@ jobs:
       - name: Commit And Push Chart Changes
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: "Added the helm chart for ${{ inputs.version }}"
+          commit_message: "Added the helm chart for ${{ github.event.inputs.version }}"
           file_pattern: ".releases/*"

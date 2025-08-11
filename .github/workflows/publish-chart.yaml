@@ -15,7 +15,7 @@ jobs:
       contents: write
       pages: write
     name: Publish Chart
-    container: ghcr.io/helm/helm:latest
+    container: alpine/helm:latest
     steps:
       - uses: actions/checkout@v4
         with:

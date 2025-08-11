@@ -90,6 +90,13 @@ jobs:
           upload_assets: '.assets/dropshipper-ui-linux-amd64 .assets/dropshipper-ui-linux-arm64 .assets/dropshipper-ui-windows-amd64.exe .assets/dropshipper-ui-darwin-amd64 .assets/dropshipper-ui-darwin-arm64'
     outputs:
       version: ${{ steps.bump_version.outputs.release_version }}
+  debug:
+    name: Debug
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Print version
+        run: echo "Version is ${{ needs.release.outputs.version }}"
   build-and-push:
     permissions:
       contents: read

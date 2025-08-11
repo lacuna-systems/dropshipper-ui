@@ -2,6 +2,11 @@ name: Helm Publish
 
 on:
   workflow_call:
+    inputs:
+      version:
+        description: "Version to tag the chart with"
+        required: false
+        type: string
 
 jobs:
   puiblish-chart:
@@ -10,12 +15,18 @@ jobs:
       contents: write
       pages: write
     name: Publish Chart
+    container: ghcr.io/helm/helm:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
-          pages_branch: release
-          packages_with_index: true
+          ref: release
+      - name: Run Helm
+        run: |
+          mkdir -p .releases
+          helm package ./charts/dropshipper-ui/ --dependency-update --destination .releases/
+          helm repo index .releases/ --url https://lacuna-systems.github.io/dropshipper-ui/charts/
+      - name: Commit And Push Chart Changes
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "Added the helm chart for ${{ inputs.version }}"
+          file_pattern: ".releases/*"

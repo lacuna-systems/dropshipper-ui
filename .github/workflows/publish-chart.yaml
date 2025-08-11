@@ -15,8 +15,9 @@ jobs:
       contents: write
       pages: write
     name: Publish Chart
-    container: alpine/helm:latest
     steps:
+      - name: Install Helm
+        uses: azure/setup-helm@v3
       - uses: actions/checkout@v4
         with:
           ref: release

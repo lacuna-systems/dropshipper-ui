@@ -122,6 +122,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git branch --set-upstream-to=origin/main main
           git fetch origin release || git checkout -b release
           git checkout release
           git merge main --no-edit

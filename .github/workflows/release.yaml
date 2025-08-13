@@ -125,9 +125,13 @@ jobs:
           git branch --set-upstream-to=origin/main main
           git fetch origin main
           git checkout main
+          echo "MAIN"
+          git log
           git fetch origin release || git checkout -b release
           git checkout release
           git branch
+          echo "RELEASE"
+          git log
           git merge main --no-edit
           git push --set-upstream origin release --force
   publish-chart:

@@ -25,7 +25,7 @@ jobs:
         run: |
           mkdir -p .releases
           helm package ./charts/dropshipper-ui/ --dependency-update --destination .releases/
-          helm repo index .releases/ --url https://lacuna-systems.github.io/dropshipper-ui/charts/
+          helm repo index .releases/ --url https://lacuna-systems.github.io/dropshipper-ui/
       - name: Commit And Push Chart Changes
         uses: stefanzweifel/git-auto-commit-action@v6
         with:

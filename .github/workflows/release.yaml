@@ -123,8 +123,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git branch --set-upstream-to=origin/main main
+          git fetch origin main
+          git checkout main
           git fetch origin release || git checkout -b release
           git checkout release
+          git branch
           git merge main --no-edit
           git push --set-upstream origin release --force
   publish-chart:

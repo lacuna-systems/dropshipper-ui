@@ -31,6 +31,9 @@ ingress:
   enabled: false
   className: ""
   annotations: {}
-  host: "dropshipper.local"
-  tls: false
-  tlsSecretName: ""
+  hosts:
+    - host: "dropshipper.local"
+      paths:
+        - path: "/"
+          pathType: Prefix
+  tls: [] # Example: [{ hosts: ["dropshipper.local"], secretName: "dropshipper-tls" }]

@@ -139,7 +139,15 @@ body {
 }
 .repo { padding: 10px; border-radius: 10px; background: #0d1016; border: var(--border); }
 .repo-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.repo-title { font-weight: 600; }
+.repo-title {
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
+}
 .repo-meta { color: var(--muted); font-size: .85rem; }
 .repo-error { color: #ffd2d2; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); padding: 8px; border-radius: 8px; margin-top: 8px; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 
@@ -155,7 +163,7 @@ body {
   border-radius: 6px;
   padding: 8px;
   border: 1px solid rgba(255,255,255,.06);
-  overflow: auto;
+  overflow: hidden;
   max-height: 240px; /* scroll within output block */
   width: 100%;
   word-break: break-word;

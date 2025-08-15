@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -78,7 +79,6 @@ func main() {
 		}
 		defer resp.Body.Close()
 		for k, vv := range resp.Header {
-			// Only pass through content type and caching headers minimally
 			if strings.EqualFold(k, "Content-Type") || strings.HasPrefix(strings.ToLower(k), "cache-") {
 				for _, v := range vv {
 					w.Header().Add(k, v)
@@ -87,8 +87,34 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(resp.StatusCode)
-		// Copy response body with a max of 25MB to avoid abuse
-		io.Copy(w, io.LimitReader(resp.Body, 25<<20))
+
+		// Read response body into buffer (limit 25MB)
+		var buf bytes.Buffer
+		_, err = io.Copy(&buf, io.LimitReader(resp.Body, 25<<20))
+		if err != nil {
+			http.Error(w, "failed to read gossip response", http.StatusInternalServerError)
+			return
+		}
+
+		// Try to decode as array of nodes
+		type Node struct {
+			NodeURL    string      `json:"node_url"`
+			IsLocal    bool        `json:"is_local"`
+			Other     interface{} `json:"-"`
+		}
+		var nodes []map[string]interface{}
+		if err := json.Unmarshal(buf.Bytes(), &nodes); err != nil {
+			// If not an array, just return raw response
+			w.Write(buf.Bytes())
+			return
+		}
+		for _, node := range nodes {
+			if local, ok := node["is_local"].(bool); ok && local {
+				node["node_url"] = u // use sanitized base URL
+			}
+		}
+		enc := json.NewEncoder(w)
+		_ = enc.Encode(nodes)
 	})
 
 	port := os.Getenv("PORT")

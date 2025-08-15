@@ -194,19 +194,38 @@
     return e;
   }
 
+  function formatNodeName(url) {
+    if (!url) return 'Unknown node';
+    try {
+      // Remove protocol
+      let u = url.replace(/^https?:\/\//, '');
+      // Remove port
+      u = u.replace(/:[0-9]+/, '');
+      // Remove trailing slash
+      u = u.replace(/\/$/, '');
+      return u;
+    } catch(e) {
+      return url;
+    }
+  }
+
+  // Track how many repos to show per node (by node index)
+  let nodeRepoShowCount = {};
+
   function render(data){
     els.cards.innerHTML = '';
     if(!Array.isArray(data) || data.length === 0){
       els.cards.appendChild(el('div', 'repo-meta', 'No nodes found.'));
       return;
     }
-
-    data.forEach(node => {
+    nodeRepoShowCount = {}; // reset on each render
+    data.forEach((node, nodeIdx) => {
       const card = el('div', 'card');
       const header = el('div', 'card-header');
       const left = el('div');
-      left.appendChild(el('div', 'repo-title', node.node_url || 'Unknown node'));
+      left.appendChild(el('div', 'repo-title', formatNodeName(node.node_url)));
       left.appendChild(el('div', 'repo-meta', fmtDate(node.last_updated)));
+      left.lastChild.title = node.node_url || 'Unknown node';
       const badges = el('div', 'badges');
       if(node.is_local){ badges.appendChild(el('span', 'badge islocal', 'local')); }
       if(node.fetch_error){ badges.appendChild(el('span', 'badge error', 'fetch error')); }
@@ -220,14 +239,27 @@
         nerr.textContent = String(node.fetch_error);
         content.appendChild(nerr);
       }
-      const repos = Array.isArray(node.repositories) ? node.repositories : [];
-      repos.forEach(repoItem => {
+      let repos = Array.isArray(node.repositories) ? node.repositories.slice() : [];
+      // Sort by Time descending
+      repos.sort((a, b) => {
+        let ta = a.Time ? new Date(a.Time).getTime() : 0;
+        let tb = b.Time ? new Date(b.Time).getTime() : 0;
+        return tb - ta;
+      });
+      // How many to show for this node?
+      let showCount = nodeRepoShowCount[nodeIdx] || 25;
+      nodeRepoShowCount[nodeIdx] = showCount;
+      let hasMore = repos.length > showCount;
+      let visibleRepos = repos.slice(0, showCount);
+      visibleRepos.forEach(repoItem => {
+        // Only show repo if it was changed
+        if (!repoItem.Changed) return;
         const r = el('div', 'repo');
         const h = el('div', 'repo-header');
         const title = el('div', 'repo-title', (repoItem.Repository && repoItem.Repository.Name) || 'repo');
         h.appendChild(title);
         const rb = el('div', 'badges');
-        if(repoItem.Changed){ rb.appendChild(el('span', 'badge changed', 'changed')); }
+        rb.appendChild(el('span', 'badge changed', 'changed'));
         rb.appendChild(el('span', `badge ${repoItem.Success ? 'success' : 'error'}`, repoItem.Success ? 'success' : 'error'));
         h.appendChild(rb);
         r.appendChild(h);
@@ -243,33 +275,46 @@
           err.textContent = repoItem.ErrorMessage;
           r.appendChild(err);
         }
-
-        const tasksWrap = el('div', 'tasks');
-        const details = document.createElement('details');
+        // Only show tasks if there were changes
         const statuses = Array.isArray(repoItem.TaskStatues) ? repoItem.TaskStatues : (Array.isArray(repoItem.TaskStatuses) ? repoItem.TaskStatuses : []);
-        const summary = el('summary', null, `Tasks (${statuses.length})`);
-        details.appendChild(summary);
-        statuses.forEach(ts => {
-          const row = el('div', 'task');
-          const name = el('div', 'name', (ts.Task && ts.Task.Name) || 'task');
-          const meta2 = el('div', 'repo-meta');
-          const cmd = ts.Task && Array.isArray(ts.Task.Command) ? ts.Task.Command.join(' ') : '';
-          meta2.innerHTML = `${ts.Success ? '<span class="badge success">ok</span>' : '<span class="badge error">fail</span>'} \u00A0 <span class="cmd">${escapeHtml(cmd)}</span>`;
-          row.appendChild(name);
-          row.appendChild(meta2);
-          if(ts.Output){
-            const pre = document.createElement('pre');
-            pre.textContent = String(ts.Output);
-            row.appendChild(pre);
-          }
-          details.appendChild(row);
-        });
-        tasksWrap.appendChild(details);
-        r.appendChild(tasksWrap);
-
+        if (statuses.length > 0) {
+          const tasksWrap = el('div', 'tasks');
+          const details = document.createElement('details');
+          const summary = el('summary', null, `Tasks (${statuses.length})`);
+          details.appendChild(summary);
+          statuses.forEach(ts => {
+            const row = el('div', 'task');
+            const name = el('div', 'name', (ts.Task && ts.Task.Name) || 'task');
+            const meta2 = el('div', 'repo-meta');
+            const cmd = ts.Task && Array.isArray(ts.Task.Command) ? ts.Task.Command.join(' ') : '';
+            meta2.innerHTML = `${ts.Success ? '<span class="badge success">ok</span>' : '<span class="badge error">fail</span>'} \u00A0 <span class="cmd">${escapeHtml(cmd)}</span>`;
+            row.appendChild(name);
+            row.appendChild(meta2);
+            if(ts.Output){
+              const pre = document.createElement('pre');
+              pre.textContent = String(ts.Output);
+              // Remove scrollable style in main view
+              pre.style.maxHeight = '';
+              pre.style.overflow = '';
+              row.appendChild(pre);
+            }
+            details.appendChild(row);
+          });
+          tasksWrap.appendChild(details);
+          r.appendChild(tasksWrap);
+        }
         content.appendChild(r);
       });
-
+      // Add show more button if needed
+      if(hasMore){
+        const moreBtn = el('button', 'btn btn-outline', `Show older statuses (${repos.length - showCount} more)`);
+        moreBtn.style.margin = '12px auto 0';
+        moreBtn.onclick = function(){
+          nodeRepoShowCount[nodeIdx] += 25;
+          render(data); // re-render with more
+        };
+        content.appendChild(moreBtn);
+      }
       contentOuter.appendChild(content);
       card.appendChild(contentOuter);
       els.cards.appendChild(card);

@@ -6,6 +6,8 @@ metadata:
     app: {{ include "dropshipper-ui.name" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    {{ .Values.strategy | default (dict) | toYaml | nindent 4 }}
   selector:
     matchLabels:
       app: {{ include "dropshipper-ui.name" . }}

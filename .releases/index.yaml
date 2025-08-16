@@ -2,7 +2,19 @@ apiVersion: v1
 entries:
   dropshipper-ui:
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.576243559Z"
+    created: "2025-08-16T01:10:04.176963605Z"
+    description: A Helm chart for deploying Dropshipper UI
+    digest: e31f40ce96d2e736805e7893a411dfa4c2eea005d771b36ffccbbfe4e1511b41
+    maintainers:
+    - email: contact@lacuna-systems.se
+      name: Lacuna
+    name: dropshipper-ui
+    type: application
+    urls:
+    - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.3.0.tgz
+    version: 1.3.0
+  - apiVersion: v2
+    created: "2025-08-16T01:10:04.176753691Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: d5a5d6f5fceb12bd76329154c436f25bfe27f7aa2ba5a251d8077abdda54dcf5
     maintainers:
@@ -14,7 +26,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.2.0.tgz
     version: 1.2.0
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.57599396Z"
+    created: "2025-08-16T01:10:04.17650811Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: 3897f2c9f6f5f93d1fd7072a073898185337cdb1274ce47218cfb4afbb83498a
     maintainers:
@@ -26,7 +38,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.1.1.tgz
     version: 1.1.1
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.575753289Z"
+    created: "2025-08-16T01:10:04.176291292Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: 0752e59eadc51ecc2c7b0477e65e3d4fdb07f0311db678a786c71a437afd9d4f
     maintainers:
@@ -38,7 +50,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.1.0.tgz
     version: 1.1.0
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.575488051Z"
+    created: "2025-08-16T01:10:04.176062393Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: 545c68eee6f0cb6dd57e74c03a8aabba7039f810b4e7b63ca8b41992a7f95730
     maintainers:
@@ -50,7 +62,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.0.21.tgz
     version: 1.0.21
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.575286282Z"
+    created: "2025-08-16T01:10:04.175846788Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: 6bb966bf0a9bb23a9efe0be941e97558a83665f8230403442792e9740a32b968
     maintainers:
@@ -62,7 +74,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.0.20.tgz
     version: 1.0.20
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.575058234Z"
+    created: "2025-08-16T01:10:04.175611566Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: 8ca228b54ffbf1dce5baea7c87a6d4d1aada91a008266781e5697572d3367d35
     maintainers:
@@ -74,7 +86,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.0.19.tgz
     version: 1.0.19
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.574792916Z"
+    created: "2025-08-16T01:10:04.17537416Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: f8bb8a025a3ad0f4c7b6c8aa6cd16f83fdc0881f4faf2dd723039f599c96f77c
     maintainers:
@@ -86,7 +98,7 @@ entries:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.0.18.tgz
     version: 1.0.18
   - apiVersion: v2
-    created: "2025-08-15T15:59:12.574546994Z"
+    created: "2025-08-16T01:10:04.175133699Z"
     description: A Helm chart for deploying Dropshipper UI
     digest: 9f2e5ee87d4eeb440109a9997cb7fa11c76cfff7f29fe37eca96196f37bc1aea
     maintainers:
@@ -97,4 +109,4 @@ entries:
     urls:
     - https://lacuna-systems.github.io/dropshipper-ui/dropshipper-ui-1.0.17.tgz
     version: 1.0.17
-generated: "2025-08-15T15:59:12.574135231Z"
+generated: "2025-08-16T01:10:04.174773041Z"

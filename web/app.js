@@ -240,6 +240,20 @@
         content.appendChild(nerr);
       }
       let repos = Array.isArray(node.repositories) ? node.repositories.slice() : [];
+      // Collapse unchanged repo statuses with same sha to one (latest time)
+      const repoMap = new Map();
+      repos.forEach(repoItem => {
+        if (!repoItem.Changed && repoItem.Sha1) {
+          const key = repoItem.Sha1;
+          if (!repoMap.has(key) || (repoItem.Time && new Date(repoItem.Time) > new Date(repoMap.get(key).Time || 0))) {
+            repoMap.set(key, repoItem);
+          }
+        } else {
+          // Changed or no sha, keep all
+          repoMap.set(Symbol(), repoItem);
+        }
+      });
+      repos = Array.from(repoMap.values());
       // Sort by Time descending
       repos.sort((a, b) => {
         let ta = a.Time ? new Date(a.Time).getTime() : 0;

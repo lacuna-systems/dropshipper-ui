@@ -252,15 +252,17 @@
       let hasMore = repos.length > showCount;
       let visibleRepos = repos.slice(0, showCount);
       visibleRepos.forEach(repoItem => {
-        // Only show repo if it was changed
-        if (!repoItem.Changed) return;
         const r = el('div', 'repo');
         const h = el('div', 'repo-header');
         const title = el('div', 'repo-title', (repoItem.Repository && repoItem.Repository.Name) || 'repo');
         h.appendChild(title);
         const rb = el('div', 'badges');
-        rb.appendChild(el('span', 'badge changed', 'changed'));
-        rb.appendChild(el('span', `badge ${repoItem.Success ? 'success' : 'error'}`, repoItem.Success ? 'success' : 'error'));
+        if(repoItem.Changed) {
+            rb.appendChild(el('span', 'badge changed', 'changed'));
+            rb.appendChild(el('span', `badge ${repoItem.Success ? 'success' : 'error'}`, repoItem.Success ? 'success' : 'error'));
+        } else {
+            rb.appendChild(el('span', 'badge unchanged', 'unchanged'));
+        }
         h.appendChild(rb);
         r.appendChild(h);
         const meta = el('div', 'repo-meta');
@@ -277,7 +279,7 @@
         }
         // Only show tasks if there were changes
         const statuses = Array.isArray(repoItem.TaskStatues) ? repoItem.TaskStatues : (Array.isArray(repoItem.TaskStatuses) ? repoItem.TaskStatuses : []);
-        if (statuses.length > 0) {
+        if (statuses.length > 0 && repoItem.Changed) {
           const tasksWrap = el('div', 'tasks');
           const details = document.createElement('details');
           const summary = el('summary', null, `Tasks (${statuses.length})`);

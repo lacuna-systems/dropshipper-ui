@@ -5,7 +5,7 @@ on:
     inputs:
       version:
         description: "Version to tag the chart with"
-        required: false
+        required: true
         type: string
 
 jobs:
@@ -29,5 +29,5 @@ jobs:
       - name: Commit And Push Chart Changes
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: "Added the helm chart for ${{ github.event.inputs.version }}"
+          commit_message: "Added the helm chart for ${{ inputs.version }}"
           file_pattern: ".releases/*"

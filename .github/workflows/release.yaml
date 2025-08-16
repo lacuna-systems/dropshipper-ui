@@ -151,4 +151,6 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/static.yaml
-    needs: publish-chart
+    needs:
+      - publish-chart
+      - build-and-push

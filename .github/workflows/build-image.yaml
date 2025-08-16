@@ -7,7 +7,7 @@ on:
     inputs:
       version:
         description: "Version to tag the image with"
-        required: false
+        required: true
         type: string
 
 jobs:
@@ -17,6 +17,8 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Debug
+        run: echo "Version is ${{ inputs.version }}"
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -39,9 +41,9 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/dropshipper-ui
           tags: |
             type=ref,event=branch
-            type=semver,pattern={{version}},value=${{ github.event.inputs.version }}
-            type=semver,pattern={{major}},value=${{ github.event.inputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.inputs.version }}
+            type=semver,pattern={{version}},value=${{ inputs.version }}
+            type=semver,pattern={{major}},value=${{ inputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.version }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

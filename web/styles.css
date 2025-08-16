@@ -122,10 +122,11 @@ body {
 }
 .badges { display: flex; align-items: center; gap: 6px; }
 .badge { font-size: .75rem; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08); color: #fff; }
-.badge.islocal { background: color-mix(in srgb, var(--brand) 40%, #000); }
+.badge.islocal { background: color-mix(in srgb, var(--brand-2) 40%, #000); }
 .badge.success { background: color-mix(in srgb, var(--success) 40%, #000); }
 .badge.error { background: color-mix(in srgb, var(--error) 40%, #000); }
-.badge.changed { background: color-mix(in srgb, var(--warning) 35%, #000); }
+.badge.changed { background: color-mix(in srgb, var(--warning) 40%, #000); }
+.badge.unchanged { background: color-mix(in srgb, var(--brand) 40%, #000); }
 
 .card .content { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .card .content-outer {
@@ -135,7 +136,8 @@ body {
   width: 100%;
   min-height: 0; /* allow content to shrink */
   max-height: 1000px; /* limit max height */
-  overflow-y: scroll;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .repo { padding: 10px; border-radius: 10px; background: #0d1016; border: var(--border); }
 .repo-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }

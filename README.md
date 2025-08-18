@@ -1,6 +1,6 @@
-# Dropshipper UI
+# <span style="font-size:1.5em;"><img src="assets/dropshipper_logo_256.png" alt="Dropshipper Logo" width="50" height="50"> dropshipper-ui</span>
 
-A minimal single‑page web application to visualize Dropshipper cluster gossip and repository/task status. Built with Go, HTML, CSS, and vanilla JavaScript. The UI reads node status data from a `/gossip` API and presents nodes, repositories, and task outputs in a clean, modern layout using the provided logos and their colors.
+A minimal single‑page web application to visualize Dropshipper node, repository and task status vis the gossip API. Built with Go, HTML, CSS, and vanilla JavaScript. The UI reads node status data from a `/gossip` API and presents nodes, repositories, and task outputs in a clean, modern layout using the provided logos and their colors.
 
 
 ## Features

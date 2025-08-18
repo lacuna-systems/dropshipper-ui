@@ -224,7 +224,18 @@
       const header = el('div', 'card-header');
       const left = el('div');
       left.appendChild(el('div', 'repo-title', formatNodeName(node.node_url)));
-      left.appendChild(el('div', 'repo-meta', fmtDate(node.last_updated)));
+
+      // Create meta info with time and version
+      const metaParts = [];
+      if(node.last_updated) {
+        metaParts.push(fmtDate(node.last_updated));
+      }
+      if(node.version && node.version !== 'unknown') {
+        metaParts.push(`v${node.version}`);
+      }
+      const metaText = metaParts.join(' • ');
+
+      left.appendChild(el('div', 'repo-meta', metaText));
       left.lastChild.title = node.node_url || 'Unknown node';
       const badges = el('div', 'badges');
       if(node.is_local){ badges.appendChild(el('span', 'badge islocal', 'local')); }

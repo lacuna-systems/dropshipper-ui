@@ -348,6 +348,11 @@
         } else {
             rb.appendChild(el('span', 'badge unchanged', 'unchanged'));
         }
+        // Add execution status badge if present
+        if(repoItem.ExecutionStatus) {
+            const execStatus = String(repoItem.ExecutionStatus).toLowerCase();
+            rb.appendChild(el('span', `badge exec-${execStatus}`, execStatus));
+        }
         h.appendChild(rb);
         r.appendChild(h);
         const meta = el('div', 'repo-meta');

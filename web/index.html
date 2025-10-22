@@ -16,8 +16,9 @@
         <h1>Dropshipper</h1>
       </div>
     </div>
-    <button id="menuToggle" class="menu-toggle icon-btn" aria-label="Open menu" aria-expanded="false" aria-controls="headerControls">☰</button>
-    <div class="controls" id="headerControls">
+    <div class="header-right">
+      <button id="menuToggle" class="menu-toggle icon-btn" aria-label="Open menu" aria-expanded="false" aria-controls="headerControls">☰</button>
+      <div class="controls" id="headerControls">
       <label class="field">
         <input id="baseUrlInput" type="url" placeholder="Base API URL" />
       </label>
@@ -25,8 +26,17 @@
         <input id="useProxyChk" type="checkbox" />
         <span>Use proxy</span>
       </label>
+      <label class="field small-field">
+        <span>Minimize after (days)</span>
+        <input id="minimizeDaysInput" type="number" min="1" max="365" value="7" />
+      </label>
+      <label class="field small-field">
+        <span>Hide after (days)</span>
+        <input id="hideDaysInput" type="number" min="1" max="365" value="30" />
+      </label>
       <button id="saveBtn" class="btn">Save</button>
       <button id="refreshBtn" class="btn btn-outline">Refresh</button>
+      </div>
     </div>
   </header>
 

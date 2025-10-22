@@ -85,7 +85,7 @@
     els.hideDaysInput.value = String(store.hideDays || 30);
     updateApiLink();
 
-    // Hamburger menu toggle for mobile
+    // Hamburger menu toggle
     if(els.menuToggle && els.appHeader && els.headerControls){
       els.menuToggle.addEventListener('click', function(e){
         const open = !els.appHeader.classList.contains('menu-open');
@@ -99,9 +99,8 @@
           }, 100);
         }
       });
-      // Close menu when clicking outside controls (on mobile)
+      // Close menu when clicking outside
       document.addEventListener('click', function(e){
-        if(window.innerWidth > 720) return; // Only on mobile
         if(!els.appHeader.classList.contains('menu-open')) return;
         if(e.target === els.menuToggle || els.headerControls.contains(e.target)) return;
         els.appHeader.classList.remove('menu-open');
@@ -139,16 +138,16 @@
       updateApiLink();
       setStatus('Saved.');
       refresh();
-      // Close menu on mobile after save
-      if(window.innerWidth <= 720 && els.appHeader.classList.contains('menu-open')){
+      // Close menu after save
+      if(els.appHeader.classList.contains('menu-open')){
         els.appHeader.classList.remove('menu-open');
         els.menuToggle.setAttribute('aria-expanded', 'false');
       }
     });
     els.refreshBtn.addEventListener('click', ()=> {
       refresh();
-      // Close menu on mobile after refresh
-      if(window.innerWidth <= 720 && els.appHeader.classList.contains('menu-open')){
+      // Close menu after refresh
+      if(els.appHeader.classList.contains('menu-open')){
         els.appHeader.classList.remove('menu-open');
         els.menuToggle.setAttribute('aria-expanded', 'false');
       }

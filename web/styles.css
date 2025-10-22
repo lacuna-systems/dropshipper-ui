@@ -44,14 +44,33 @@ body {
 .titles h1 { margin: 0; font-size: 1.25rem; letter-spacing: .3px; }
 .titles .subtitle { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
 
-/* Hamburger toggle (hidden on desktop by default) */
-.menu-toggle { display: none; align-items: center; justify-content: center; gap: 6px; }
+/* Header right section with hamburger menu */
+.header-right { position: relative; display: flex; align-items: center; }
 
-.controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+/* Hamburger toggle (always visible, right-aligned) */
+.menu-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+.controls { 
+  display: none; /* hidden by default */
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #0d1016;
+  border: var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  z-index: 20;
+  min-width: 320px;
+}
+.app-header.menu-open .controls { display: flex; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > span { font-size: .8rem; color: var(--muted); }
 .field input[type="url"] {
-  min-width: min(56vw, 480px);
+  width: 100%;
   background: #0d1016;
   color: var(--text);
   border: var(--border);
@@ -61,7 +80,7 @@ body {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
 }
 .field.small-field input[type="number"] {
-  width: 80px;
+  width: 100%;
   background: #0d1016;
   color: var(--text);
   border: var(--border);
@@ -266,25 +285,9 @@ body {
 body.modal-open { overflow: hidden; }
 
 @media (max-width: 720px) {
-  .menu-toggle { display: inline-flex; }
-  .app-header { position: sticky; top: 0; }
-  .app-header .controls {
-    display: none; /* hidden by default on mobile */
-    position: absolute;
-    top: calc(100% + 8px);
+  .controls {
     left: 8px;
     right: 8px;
-    background: #0d1016;
-    border: var(--border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    padding: 10px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    z-index: 20;
+    min-width: 0;
   }
-  .app-header.menu-open .controls { display: flex; }
-  .controls { align-items: stretch; }
-  .field input[type="url"] { min-width: 0; width: 100%; }
 }

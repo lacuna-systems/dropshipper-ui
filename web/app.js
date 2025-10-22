@@ -6,6 +6,8 @@
     headerControls: document.getElementById('headerControls'),
     baseUrlInput: document.getElementById('baseUrlInput'),
     useProxyChk: document.getElementById('useProxyChk'),
+    minimizeDaysInput: document.getElementById('minimizeDaysInput'),
+    hideDaysInput: document.getElementById('hideDaysInput'),
     saveBtn: document.getElementById('saveBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
     autoRefreshChk: document.getElementById('autoRefreshChk'),
@@ -29,6 +31,10 @@
     set autoRefresh(v){ localStorage.setItem('ds.autoRefresh', v ? 'true' : 'false'); },
     get interval(){ return parseInt(localStorage.getItem('ds.interval') || '10', 10); },
     set interval(v){ localStorage.setItem('ds.interval', String(v)); },
+    get minimizeDays(){ return parseInt(localStorage.getItem('ds.minimizeDays') || '7', 10); },
+    set minimizeDays(v){ localStorage.setItem('ds.minimizeDays', String(v)); },
+    get hideDays(){ return parseInt(localStorage.getItem('ds.hideDays') || '30', 10); },
+    set hideDays(v){ localStorage.setItem('ds.hideDays', String(v)); },
   };
 
   // Footer year
@@ -75,6 +81,8 @@
     els.useProxyChk.checked = store.useProxy;
     els.autoRefreshChk.checked = store.autoRefresh;
     els.intervalSelect.value = String(store.interval || 10);
+    els.minimizeDaysInput.value = String(store.minimizeDays || 7);
+    els.hideDaysInput.value = String(store.hideDays || 30);
     updateApiLink();
 
     // Hamburger menu toggle for mobile
@@ -108,10 +116,26 @@
         setStatus('Please enter a valid http(s) URL for the API.', false);
         return;
       }
+      const minimizeDays = parseInt(els.minimizeDaysInput.value, 10);
+      const hideDays = parseInt(els.hideDaysInput.value, 10);
+      if(minimizeDays < 1 || minimizeDays > 365){
+        setStatus('Minimize days must be between 1 and 365.', false);
+        return;
+      }
+      if(hideDays < 1 || hideDays > 365){
+        setStatus('Hide days must be between 1 and 365.', false);
+        return;
+      }
+      if(hideDays < minimizeDays){
+        setStatus('Hide days should be greater than or equal to minimize days.', false);
+        return;
+      }
       store.baseUrl = val;
       store.useProxy = !!els.useProxyChk.checked;
       store.autoRefresh = !!els.autoRefreshChk.checked;
       store.interval = parseInt(els.intervalSelect.value, 10) || 10;
+      store.minimizeDays = minimizeDays;
+      store.hideDays = hideDays;
       updateApiLink();
       setStatus('Saved.');
       refresh();
@@ -209,6 +233,19 @@
     }
   }
 
+  function daysSinceUpdate(lastUpdated) {
+    if (!lastUpdated) return null;
+    try {
+      const last = new Date(lastUpdated);
+      const now = new Date();
+      const diffMs = now - last;
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      return diffDays;
+    } catch(e) {
+      return null;
+    }
+  }
+
   // Track how many repos to show per node (by node index)
   let nodeRepoShowCount = {};
 
@@ -219,8 +256,24 @@
       return;
     }
     nodeRepoShowCount = {}; // reset on each render
+    const minimizeDays = store.minimizeDays || 7;
+    const hideDays = store.hideDays || 30;
+    
     data.forEach((node, nodeIdx) => {
       const card = el('div', 'card');
+      
+      // Calculate days since last update
+      const daysSince = daysSinceUpdate(node.last_updated);
+      
+      // Apply minimized/hidden classes based on thresholds
+      if (daysSince !== null) {
+        if (daysSince >= hideDays) {
+          card.classList.add('hidden');
+        } else if (daysSince >= minimizeDays) {
+          card.classList.add('minimized');
+        }
+      }
+      
       const header = el('div', 'card-header');
       const left = el('div');
       left.appendChild(el('div', 'repo-title', formatNodeName(node.node_url)));
@@ -240,6 +293,13 @@
       const badges = el('div', 'badges');
       if(node.is_local){ badges.appendChild(el('span', 'badge islocal', 'local')); }
       if(node.fetch_error){ badges.appendChild(el('span', 'badge error', 'fetch error')); }
+      
+      // Add stale badge if node hasn't been heard from in minimizeDays
+      if (daysSince !== null && daysSince >= minimizeDays && daysSince < hideDays) {
+        const staleDays = Math.floor(daysSince);
+        badges.appendChild(el('span', 'badge stale', `stale (${staleDays}d)`));
+      }
+      
       header.appendChild(left);
       header.appendChild(badges);
       card.appendChild(header);

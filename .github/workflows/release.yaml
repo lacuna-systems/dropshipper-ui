@@ -71,14 +71,13 @@ jobs:
         run: git status
       - name: Commit Changes
         id: commit_chart
-        uses: EndBug/add-and-commit@v9
+        uses: packagrio/action-releasr-generic@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          author_name: github-actions[bot]
-          author_email: github-actions[bot]@users.noreply.github.com
-          message: "Bump version to ${{ steps.bump_version.outputs.release_version }}"
-          add: |
-            charts/dropshipper-ui/Chart.yaml
-            pkg/version/version.go
+          version_metadata_path: charts/dropshipper-ui/Chart.yaml
+          generic_version_template: 'version: %d.%d.%d'
+          generic_merge_version_file: true
       - name: Publish Release
         id: publish
         uses: packagrio/action-publishr-generic@master

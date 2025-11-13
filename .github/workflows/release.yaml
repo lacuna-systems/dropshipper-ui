@@ -41,6 +41,8 @@ jobs:
           version_metadata_path: charts/dropshipper-ui/Chart.yaml
           generic_version_template: 'version: %d.%d.%d'
           generic_merge_version_file: true
+      - name: Debug Git Status
+        run: git status
       - name: Set up Go
         uses: actions/setup-go@v4
         with:

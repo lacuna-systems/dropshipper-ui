@@ -78,8 +78,6 @@ jobs:
           version_metadata_path: charts/dropshipper-ui/Chart.yaml
           generic_version_template: 'version: %d.%d.%d'
           generic_merge_version_file: true
-      - name: Debug Latest Commits
-        run: git show --name-only --oneline -5
       - name: Publish Release
         id: publish
         uses: packagrio/action-publishr-generic@master
@@ -87,6 +85,9 @@ jobs:
           # This is necessary in order to push a commit to the repo
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
         with:
+          version_metadata_path: charts/dropshipper-ui/Chart.yaml
+          generic_version_template: 'version: %d.%d.%d'
+          generic_merge_version_file: true
           upload_assets: '.assets/dropshipper-ui-linux-amd64 .assets/dropshipper-ui-linux-arm64 .assets/dropshipper-ui-windows-amd64.exe .assets/dropshipper-ui-darwin-amd64 .assets/dropshipper-ui-darwin-arm64'
     outputs:
       version: ${{ steps.bump_version.outputs.release_version }}

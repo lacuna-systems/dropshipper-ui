@@ -7,7 +7,6 @@
 *.dll
 *.so
 *.dylib
-dropshipper-ui
 
 # Test binary, built with `go test -c`
 *.test

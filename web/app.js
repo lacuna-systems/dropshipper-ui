@@ -1,13 +1,13 @@
-(function(){
+(function () {
+  'use strict';
+
   const els = {
-    logo: document.getElementById('brandLogo'),
-    appHeader: document.querySelector('header.app-header'),
+    appHeader: document.querySelector('.app-header'),
     menuToggle: document.getElementById('menuToggle'),
     headerControls: document.getElementById('headerControls'),
     baseUrlInput: document.getElementById('baseUrlInput'),
     useProxyChk: document.getElementById('useProxyChk'),
-    minimizeDaysInput: document.getElementById('minimizeDaysInput'),
-    hideDaysInput: document.getElementById('hideDaysInput'),
+    mergeNodesChk: document.getElementById('mergeNodesChk'),
     saveBtn: document.getElementById('saveBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
     autoRefreshChk: document.getElementById('autoRefreshChk'),
@@ -16,431 +16,540 @@
     lastUpdated: document.getElementById('lastUpdated'),
     apiLink: document.getElementById('apiLink'),
     year: document.getElementById('year'),
+    version: document.getElementById('version'),
     outputModal: document.getElementById('outputModal'),
     modalOutput: document.getElementById('modalOutput'),
     modalClose: document.getElementById('modalClose'),
-    version: document.getElementById('version'),
   };
 
   const store = {
-    get baseUrl(){ return localStorage.getItem('ds.baseUrl') || ''; },
-    set baseUrl(v){ localStorage.setItem('ds.baseUrl', v || ''); },
-    get useProxy(){ return (localStorage.getItem('ds.useProxy') ?? 'true') === 'true'; },
-    set useProxy(v){ localStorage.setItem('ds.useProxy', v ? 'true' : 'false'); },
-    get autoRefresh(){ return (localStorage.getItem('ds.autoRefresh') ?? 'false') === 'true'; },
-    set autoRefresh(v){ localStorage.setItem('ds.autoRefresh', v ? 'true' : 'false'); },
-    get interval(){ return parseInt(localStorage.getItem('ds.interval') || '10', 10); },
-    set interval(v){ localStorage.setItem('ds.interval', String(v)); },
-    get minimizeDays(){ return parseInt(localStorage.getItem('ds.minimizeDays') || '7', 10); },
-    set minimizeDays(v){ localStorage.setItem('ds.minimizeDays', String(v)); },
-    get hideDays(){ return parseInt(localStorage.getItem('ds.hideDays') || '30', 10); },
-    set hideDays(v){ localStorage.setItem('ds.hideDays', String(v)); },
+    get baseUrl() { return localStorage.getItem('ds.baseUrl') || ''; },
+    set baseUrl(value) { localStorage.setItem('ds.baseUrl', value || ''); },
+    get useProxy() { return (localStorage.getItem('ds.useProxy') || 'true') === 'true'; },
+    set useProxy(value) { localStorage.setItem('ds.useProxy', value ? 'true' : 'false'); },
+    get mergeNodes() { return (localStorage.getItem('ds.mergeNodes') || 'false') === 'true'; },
+    set mergeNodes(value) { localStorage.setItem('ds.mergeNodes', value ? 'true' : 'false'); },
+    get autoRefresh() { return (localStorage.getItem('ds.autoRefresh') || 'false') === 'true'; },
+    set autoRefresh(value) { localStorage.setItem('ds.autoRefresh', value ? 'true' : 'false'); },
+    get interval() { return Number(localStorage.getItem('ds.interval') || 10); },
+    set interval(value) { localStorage.setItem('ds.interval', String(value || 10)); },
   };
 
-  // Footer year
-  els.year.textContent = new Date().getFullYear();
+  let refreshTimer = null;
 
+  function createEl(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  }
 
-  // Load config from server for default baseApiUrl
-  async function loadServerConfig(){
+  function metaEl(items) {
+    const wrap = createEl('dl', 'meta');
+    items.filter(item => item && item.value).forEach(item => {
+      const row = createEl('div', 'meta-row');
+      row.appendChild(createEl('dt', null, item.label));
+      row.appendChild(createEl('dd', null, item.value));
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+
+  function normalizeBaseUrl(value) {
+    const base = String(value || '').trim();
+    if (!base) return '';
+    const url = new URL(base);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('Base API URL must start with http:// or https://');
+    }
+    url.search = '';
+    url.hash = '';
+    url.pathname = url.pathname.replace(/\/+$/, '');
+    return url.toString().replace(/\/$/, '');
+  }
+
+  async function loadServerConfig() {
     try {
       const res = await fetch('/config', { cache: 'no-store' });
-      if(res.ok){
-        const cfg = await res.json();
-        // Set version if present
-        if(cfg.version && els.version) {
-          els.version.textContent = `v${cfg.version}`;
-          console.log(`Gossip UI v${cfg.version}`);
-        } else {
-          console.warn('Server config does not contain version info');
-        }
-        return cfg && cfg.baseApiUrl ? cfg.baseApiUrl : '';
+      if (!res.ok) return '';
+
+      const config = await res.json();
+      if (config.version && els.version) {
+        els.version.textContent = `v${config.version}`;
       }
-    } catch(_) {}
-    return '';
-  }
-
-  function setStatus(text, ok=true){
-    els.lastUpdated.textContent = text;
-    els.lastUpdated.style.color = ok ? 'var(--muted)' : 'var(--error)';
-  }
-
-  function updateApiLink(){
-    const base = (els.baseUrlInput.value || '').replace(/\/$/, '');
-    els.apiLink.href = base ? `${base}/gossip` : '#';
-  }
-
-  async function init(){
-    // Initialize inputs from storage or server config
-    let base = store.baseUrl;
-    let serverConfig = await loadServerConfig();
-    if(!base) {
-      base = serverConfig; store.baseUrl = base;
+      return config.baseApiUrl || '';
+    } catch (_) {
+      return '';
     }
-    els.baseUrlInput.value = base;
+  }
+
+  async function init() {
+    els.year.textContent = new Date().getFullYear();
+
+    const serverBaseUrl = await loadServerConfig();
+    const baseUrl = store.baseUrl || serverBaseUrl;
+    store.baseUrl = baseUrl;
+
+    els.baseUrlInput.value = baseUrl;
     els.useProxyChk.checked = store.useProxy;
+    els.mergeNodesChk.checked = store.mergeNodes;
     els.autoRefreshChk.checked = store.autoRefresh;
     els.intervalSelect.value = String(store.interval || 10);
-    els.minimizeDaysInput.value = String(store.minimizeDays || 7);
-    els.hideDaysInput.value = String(store.hideDays || 30);
+
+    bindControls();
     updateApiLink();
-
-    // Hamburger menu toggle
-    if(els.menuToggle && els.appHeader && els.headerControls){
-      els.menuToggle.addEventListener('click', function(e){
-        const open = !els.appHeader.classList.contains('menu-open');
-        els.appHeader.classList.toggle('menu-open', open);
-        els.menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if(open){
-          // Focus first input in menu for accessibility
-          setTimeout(()=>{
-            const inp = els.headerControls.querySelector('input,select,button');
-            if(inp) inp.focus();
-          }, 100);
-        }
-      });
-      // Close menu when clicking outside
-      document.addEventListener('click', function(e){
-        if(!els.appHeader.classList.contains('menu-open')) return;
-        if(e.target === els.menuToggle || els.headerControls.contains(e.target)) return;
-        els.appHeader.classList.remove('menu-open');
-        els.menuToggle.setAttribute('aria-expanded', 'false');
-      });
-    }
-
-    // Bind controls
-    els.saveBtn.addEventListener('click', ()=>{
-      const val = els.baseUrlInput.value.trim();
-      if(val && !/^https?:\/\//i.test(val)){
-        setStatus('Please enter a valid http(s) URL for the API.', false);
-        return;
-      }
-      const minimizeDays = parseInt(els.minimizeDaysInput.value, 10);
-      const hideDays = parseInt(els.hideDaysInput.value, 10);
-      if(minimizeDays < 1 || minimizeDays > 365){
-        setStatus('Minimize days must be between 1 and 365.', false);
-        return;
-      }
-      if(hideDays < 1 || hideDays > 365){
-        setStatus('Hide days must be between 1 and 365.', false);
-        return;
-      }
-      if(hideDays < minimizeDays){
-        setStatus('Hide days should be greater than or equal to minimize days.', false);
-        return;
-      }
-      store.baseUrl = val;
-      store.useProxy = !!els.useProxyChk.checked;
-      store.autoRefresh = !!els.autoRefreshChk.checked;
-      store.interval = parseInt(els.intervalSelect.value, 10) || 10;
-      store.minimizeDays = minimizeDays;
-      store.hideDays = hideDays;
-      updateApiLink();
-      setStatus('Saved.');
-      refresh();
-      // Close menu after save
-      if(els.appHeader.classList.contains('menu-open')){
-        els.appHeader.classList.remove('menu-open');
-        els.menuToggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-    els.refreshBtn.addEventListener('click', ()=> {
-      refresh();
-      // Close menu after refresh
-      if(els.appHeader.classList.contains('menu-open')){
-        els.appHeader.classList.remove('menu-open');
-        els.menuToggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-    els.autoRefreshChk.addEventListener('change', ()=>{
-      store.autoRefresh = !!els.autoRefreshChk.checked;
-      setupAutoRefresh();
-    });
-    els.intervalSelect.addEventListener('change', ()=>{
-      store.interval = parseInt(els.intervalSelect.value, 10) || 10;
-      setupAutoRefresh();
-    });
-
-    // First load
-    refresh();
     setupAutoRefresh();
+    refresh();
   }
 
-  let refreshTimer = null;
-  function setupAutoRefresh(){
-    if(refreshTimer){ clearInterval(refreshTimer); refreshTimer = null; }
-    if(store.autoRefresh){
-      refreshTimer = setInterval(refresh, Math.max(3000, store.interval*1000));
+  function bindControls() {
+    els.menuToggle.addEventListener('click', () => {
+      const open = !els.appHeader.classList.contains('menu-open');
+      els.appHeader.classList.toggle('menu-open', open);
+      els.menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', event => {
+      if (!els.appHeader.classList.contains('menu-open')) return;
+      if (event.target === els.menuToggle || els.headerControls.contains(event.target)) return;
+      closeMenu();
+    });
+
+    els.baseUrlInput.addEventListener('input', updateApiLink);
+    els.saveBtn.addEventListener('click', saveSettings);
+    els.refreshBtn.addEventListener('click', refresh);
+    els.mergeNodesChk.addEventListener('change', () => {
+      store.mergeNodes = els.mergeNodesChk.checked;
+      refresh();
+    });
+    els.autoRefreshChk.addEventListener('change', () => {
+      store.autoRefresh = els.autoRefreshChk.checked;
+      setupAutoRefresh();
+    });
+    els.intervalSelect.addEventListener('change', () => {
+      store.interval = Number(els.intervalSelect.value) || 10;
+      setupAutoRefresh();
+    });
+
+    if (els.modalClose) els.modalClose.addEventListener('click', closeOutputModal);
+    if (els.outputModal) {
+      els.outputModal.addEventListener('click', event => {
+        if (event.target === els.outputModal) closeOutputModal();
+      });
+    }
+    els.cards.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target : event.target.parentElement;
+      const output = target ? target.closest('.task-output') : null;
+      if (output) openOutputModal(output.textContent || '');
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeOutputModal();
+    });
+  }
+
+  function closeMenu() {
+    els.appHeader.classList.remove('menu-open');
+    els.menuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function saveSettings() {
+    try {
+      const baseUrl = normalizeBaseUrl(els.baseUrlInput.value);
+      els.baseUrlInput.value = baseUrl;
+      store.baseUrl = baseUrl;
+      store.useProxy = els.useProxyChk.checked;
+      store.mergeNodes = els.mergeNodesChk.checked;
+      store.autoRefresh = els.autoRefreshChk.checked;
+      store.interval = Number(els.intervalSelect.value) || 10;
+      updateApiLink();
+      setupAutoRefresh();
+      closeMenu();
+      refresh();
+    } catch (error) {
+      setStatus(error.message, false);
     }
   }
 
-  function gossipURL(){
-    const base = (els.baseUrlInput.value || '').replace(/\/$/, '');
-    if(!base) return '';
-    if(els.useProxyChk.checked){
-      const q = encodeURIComponent(base);
-      return `/proxy/gossip?base=${q}`;
+  function updateApiLink() {
+    let baseUrl = '';
+    try {
+      baseUrl = normalizeBaseUrl(els.baseUrlInput.value);
+    } catch (_) {
+      // Keep the current validation message for Save/Refresh.
     }
-    return `${base}/gossip`;
+    els.apiLink.href = baseUrl ? `${baseUrl}/gossip` : '#';
   }
 
-  async function refresh(){
-    const url = gossipURL();
-    if(!url){ setStatus('Please set the Base API URL.', false); return; }
-    setStatus('Loading…');
+  function setupAutoRefresh() {
+    if (refreshTimer) window.clearInterval(refreshTimer);
+    refreshTimer = null;
+
+    if (store.autoRefresh) {
+      refreshTimer = window.setInterval(refresh, Math.max(5, store.interval) * 1000);
+    }
+  }
+
+  function gossipUrl() {
+    const baseUrl = normalizeBaseUrl(els.baseUrlInput.value || store.baseUrl);
+    if (!baseUrl) return '';
+    return els.useProxyChk.checked ? `/proxy/gossip?base=${encodeURIComponent(baseUrl)}` : `${baseUrl}/gossip`;
+  }
+
+  async function refresh() {
+    let url = '';
+    try {
+      url = gossipUrl();
+    } catch (error) {
+      setStatus(error.message, false);
+      return;
+    }
+    if (!url) {
+      setStatus('Please set the Base API URL.', false);
+      return;
+    }
+
+    setStatus('Loading...');
     try {
       const controller = new AbortController();
-      const t = setTimeout(()=> controller.abort(), 15000);
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
       const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
-      clearTimeout(t);
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      window.clearTimeout(timeout);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
       render(data);
       setStatus(`Updated at ${new Date().toLocaleTimeString()}`);
-    } catch(err){
-      console.error(err);
-      setStatus(`Failed to load gossip: ${err.message || err}`, false);
+    } catch (error) {
+      setStatus(`Failed to load gossip: ${error.message || error}`, false);
     }
   }
 
-  function fmtDate(iso){
-    if(!iso) return '';
-    try { return new Date(iso).toLocaleString(); } catch(_) { return String(iso); }
+  function setStatus(text, ok = true) {
+    els.lastUpdated.textContent = text;
+    els.lastUpdated.classList.toggle('error-text', !ok);
   }
 
-  function shortSha(sha){ return sha ? sha.slice(0, 7) : ''; }
+  function render(data) {
+    els.cards.replaceChildren();
 
-  function el(tag, cls, text){
-    const e = document.createElement(tag);
-    if(cls) e.className = cls;
-    if(text != null) e.textContent = text;
-    return e;
-  }
-
-  function formatNodeName(url) {
-    if (!url) return 'Unknown node';
-    try {
-      // Remove protocol
-      let u = url.replace(/^https?:\/\//, '');
-      // Remove port
-      u = u.replace(/:[0-9]+/, '');
-      // Remove trailing slash
-      u = u.replace(/\/$/, '');
-      return u;
-    } catch(e) {
-      return url;
-    }
-  }
-
-  function daysSinceUpdate(lastUpdated) {
-    if (!lastUpdated) return null;
-    try {
-      const last = new Date(lastUpdated);
-      const now = new Date();
-      const diffMs = now - last;
-      const diffDays = diffMs / (1000 * 60 * 60 * 24);
-      return diffDays;
-    } catch(e) {
-      return null;
-    }
-  }
-
-  // Track how many repos to show per node (by node index)
-  let nodeRepoShowCount = {};
-
-  function render(data){
-    els.cards.innerHTML = '';
-    if(!Array.isArray(data) || data.length === 0){
-      els.cards.appendChild(el('div', 'repo-meta', 'No nodes found.'));
+    const nodes = store.mergeNodes ? mergeMatchingNodes(data) : (Array.isArray(data) ? data.slice() : []);
+    if (nodes.length === 0) {
+      els.cards.appendChild(createEl('div', 'empty', 'No nodes found.'));
       return;
     }
-    nodeRepoShowCount = {}; // reset on each render
-    const minimizeDays = store.minimizeDays || 7;
-    const hideDays = store.hideDays || 30;
-    
-    data.forEach((node, nodeIdx) => {
-      const card = el('div', 'card');
-      
-      // Calculate days since last update
-      const daysSince = daysSinceUpdate(node.last_updated);
-      
-      // Apply minimized/hidden classes based on thresholds
-      if (daysSince !== null) {
-        if (daysSince >= hideDays) {
-          card.classList.add('hidden');
-        } else if (daysSince >= minimizeDays) {
-          card.classList.add('minimized');
-        }
-      }
-      
-      const header = el('div', 'card-header');
-      const left = el('div');
-      left.appendChild(el('div', 'repo-title', formatNodeName(node.node_url)));
 
-      // Create meta info with time and version
-      const metaParts = [];
-      if(node.last_updated) {
-        metaParts.push(fmtDate(node.last_updated));
-      }
-      if(node.version && node.version !== 'unknown') {
-        metaParts.push(`v${node.version}`);
-      }
-      const metaText = metaParts.join(' • ');
-
-      left.appendChild(el('div', 'repo-meta', metaText));
-      left.lastChild.title = node.node_url || 'Unknown node';
-      const badges = el('div', 'badges');
-      if(node.is_local){ badges.appendChild(el('span', 'badge islocal', 'local')); }
-      if(node.fetch_error){ badges.appendChild(el('span', 'badge error', 'fetch error')); }
-      
-      // Add stale badge if node hasn't been heard from in minimizeDays
-      if (daysSince !== null && daysSince >= minimizeDays && daysSince < hideDays) {
-        const staleDays = Math.floor(daysSince);
-        badges.appendChild(el('span', 'badge stale', `stale (${staleDays}d)`));
-      }
-      
-      header.appendChild(left);
-      header.appendChild(badges);
-      card.appendChild(header);
-      const contentOuter = el('div', 'content-outer');
-      const content = el('div', 'content');
-      if(node.fetch_error){
-        const nerr = el('div', 'repo-error');
-        nerr.textContent = String(node.fetch_error);
-        content.appendChild(nerr);
-      }
-      let repos = Array.isArray(node.repositories) ? node.repositories.slice() : [];
-      // Collapse unchanged repo statuses with same sha to one (latest time)
-      const repoMap = new Map();
-      repos.forEach(repoItem => {
-        if (!repoItem.Changed && repoItem.Sha1) {
-          const key = repoItem.Sha1;
-          if (!repoMap.has(key) || (repoItem.Time && new Date(repoItem.Time) > new Date(repoMap.get(key).Time || 0))) {
-            repoMap.set(key, repoItem);
-          }
-        } else {
-          // Changed or no sha, keep all
-          repoMap.set(Symbol(), repoItem);
-        }
-      });
-      repos = Array.from(repoMap.values());
-      // Sort by Time descending
-      repos.sort((a, b) => {
-        let ta = a.Time ? new Date(a.Time).getTime() : 0;
-        let tb = b.Time ? new Date(b.Time).getTime() : 0;
-        return tb - ta;
-      });
-      // How many to show for this node?
-      let showCount = nodeRepoShowCount[nodeIdx] || 25;
-      nodeRepoShowCount[nodeIdx] = showCount;
-      let hasMore = repos.length > showCount;
-      let visibleRepos = repos.slice(0, showCount);
-      visibleRepos.forEach(repoItem => {
-        const r = el('div', 'repo');
-        const h = el('div', 'repo-header');
-        const title = el('div', 'repo-title', (repoItem.Repository && repoItem.Repository.Name) || 'repo');
-        h.appendChild(title);
-        const rb = el('div', 'badges');
-        if(repoItem.Changed) {
-            rb.appendChild(el('span', 'badge changed', 'changed'));
-            rb.appendChild(el('span', `badge ${repoItem.Success ? 'success' : 'error'}`, repoItem.Success ? 'success' : 'error'));
-        } else {
-            rb.appendChild(el('span', 'badge unchanged', 'unchanged'));
-        }
-        // Add execution status badge if present
-        if(repoItem.ExecutionStatus) {
-            const execStatus = String(repoItem.ExecutionStatus).toLowerCase();
-            rb.appendChild(el('span', `badge exec-${execStatus}`, execStatus));
-        }
-        h.appendChild(rb);
-        r.appendChild(h);
-        const meta = el('div', 'repo-meta');
-        const parts = [];
-        if(repoItem.Sha1) parts.push(`sha ${shortSha(repoItem.Sha1)}`);
-        if(repoItem.Time) parts.push(fmtDate(repoItem.Time));
-        if(repoItem.Repository && repoItem.Repository.ConfigPath) parts.push(repoItem.Repository.ConfigPath);
-        meta.textContent = parts.join(' • ');
-        r.appendChild(meta);
-        if(repoItem.ErrorMessage){
-          const err = el('div', 'repo-error');
-          err.textContent = repoItem.ErrorMessage;
-          r.appendChild(err);
-        }
-        // Only show tasks if there were changes
-        const statuses = Array.isArray(repoItem.TaskStatues) ? repoItem.TaskStatues : (Array.isArray(repoItem.TaskStatuses) ? repoItem.TaskStatuses : []);
-        if (statuses.length > 0 && repoItem.Changed) {
-          const tasksWrap = el('div', 'tasks');
-          const details = document.createElement('details');
-          const summary = el('summary', null, `Tasks (${statuses.length})`);
-          details.appendChild(summary);
-          statuses.forEach(ts => {
-            const row = el('div', 'task');
-            const name = el('div', 'name', (ts.Task && ts.Task.Name) || 'task');
-            const meta2 = el('div', 'repo-meta');
-            const cmd = ts.Task && Array.isArray(ts.Task.Command) ? ts.Task.Command.join(' ') : '';
-            meta2.innerHTML = `${ts.Success ? '<span class="badge success">ok</span>' : '<span class="badge error">fail</span>'} \u00A0 <span class="cmd">${escapeHtml(cmd)}</span>`;
-            row.appendChild(name);
-            row.appendChild(meta2);
-            if(ts.Output){
-              const pre = document.createElement('pre');
-              pre.textContent = String(ts.Output);
-              // Remove scrollable style in main view
-              pre.style.maxHeight = '';
-              pre.style.overflow = '';
-              row.appendChild(pre);
-            }
-            details.appendChild(row);
-          });
-          tasksWrap.appendChild(details);
-          r.appendChild(tasksWrap);
-        }
-        content.appendChild(r);
-      });
-      // Add show more button if needed
-      if(hasMore){
-        const moreBtn = el('button', 'btn btn-outline', `Show older statuses (${repos.length - showCount} more)`);
-        moreBtn.style.margin = '12px auto 0';
-        moreBtn.onclick = function(){
-          nodeRepoShowCount[nodeIdx] += 25;
-          render(data); // re-render with more
-        };
-        content.appendChild(moreBtn);
-      }
-      contentOuter.appendChild(content);
-      card.appendChild(contentOuter);
-      els.cards.appendChild(card);
-    });
+    nodes.sort((a, b) => Number(Boolean(b.is_local)) - Number(Boolean(a.is_local)) || nodeTitle(a).localeCompare(nodeTitle(b)));
+    nodes.forEach(node => els.cards.appendChild(renderNode(node)));
   }
 
-  // Modal helpers
-  function openOutputModal(text){
-    if(!els.outputModal) return;
+  function renderNode(node) {
+    const card = createEl('article', 'card');
+    const header = createEl('div', 'card-header');
+    const titleWrap = createEl('div');
+
+    titleWrap.appendChild(createEl('h2', 'card-title', nodeTitle(node)));
+    titleWrap.appendChild(metaEl(nodeMeta(node)));
+    header.appendChild(titleWrap);
+    header.appendChild(nodeBadges(node));
+    card.appendChild(header);
+
+    const body = createEl('div', 'card-body');
+    if (node.fetch_error) body.appendChild(errorBlock(node.fetch_error));
+
+    const repositories = latestRepositoryStatuses(node.repositories);
+    if (repositories.length === 0) {
+      body.appendChild(createEl('div', 'empty small', 'No repository statuses yet.'));
+    } else {
+      const list = createEl('div', 'repo-list');
+      repositories.forEach(status => list.appendChild(renderRepository(status)));
+      body.appendChild(list);
+    }
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function nodeTitle(node) {
+    return node.hostname || displayUrl(node.node_url) || node.node_id || 'Unknown node';
+  }
+
+  function nodeMeta(node) {
+    const lastUpdated = node.last_updated || node.LastUpdated;
+    return [
+      { label: 'URL', value: node.node_url },
+      { label: 'Node', value: node.node_id ? shortId(node.node_id) : '' },
+      { label: 'Updated', value: lastUpdated ? fmtDate(lastUpdated) : '' },
+      { label: 'Version', value: node.version && node.version !== 'unknown' ? `v${node.version}` : '' },
+    ];
+  }
+
+  function nodeBadges(node) {
+    const badges = createEl('div', 'badges');
+    if (node.is_local) badges.appendChild(createEl('span', 'badge local', 'local'));
+    if (node._mergedCount > 1) badges.appendChild(createEl('span', 'badge merged', `merged ${node._mergedCount}`));
+    if (node.fetch_error) badges.appendChild(createEl('span', 'badge error', 'fetch error'));
+    return badges;
+  }
+
+  function mergeMatchingNodes(data) {
+    const nodes = Array.isArray(data) ? data.filter(Boolean) : [];
+    const parents = nodes.map((_, index) => index);
+    const keyOwners = new Map();
+
+    function find(index) {
+      while (parents[index] !== index) {
+        parents[index] = parents[parents[index]];
+        index = parents[index];
+      }
+      return index;
+    }
+
+    function union(left, right) {
+      const leftRoot = find(left);
+      const rightRoot = find(right);
+      if (leftRoot !== rightRoot) parents[rightRoot] = leftRoot;
+    }
+
+    nodes.forEach((node, index) => {
+      nodeMergeKeys(node).forEach(key => {
+        if (keyOwners.has(key)) {
+          union(index, keyOwners.get(key));
+        } else {
+          keyOwners.set(key, index);
+        }
+      });
+    });
+
+    const groups = new Map();
+    nodes.forEach((node, index) => {
+      const root = find(index);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root).push(node);
+    });
+
+    return Array.from(groups.values()).map(mergeNodeGroup);
+  }
+
+  function nodeMergeKeys(node) {
+    const keys = new Set();
+    const nodeId = normalizedText(node.node_id);
+    const hostname = normalizedText(node.hostname);
+    const url = normalizedNodeUrl(node.node_url);
+    const urlHost = normalizedUrlHost(node.node_url);
+
+    if (nodeId && nodeId !== 'unknown') keys.add(`id:${nodeId}`);
+    if (hostname && hostname !== 'unknown') keys.add(`name:${hostname}`);
+    if (url) keys.add(`url:${url}`);
+    if (urlHost && urlHost !== 'unknown') keys.add(`name:${urlHost}`);
+    return Array.from(keys);
+  }
+
+  function mergeNodeGroup(nodes) {
+    if (nodes.length === 1) return nodes[0];
+
+    const primary = primaryNode(nodes);
+    const latest = nodes.reduce((current, node) => timeValue(nodeUpdatedAt(node)) > timeValue(nodeUpdatedAt(current)) ? node : current, nodes[0]);
+    const merged = {
+      ...primary,
+      is_local: nodes.some(node => node.is_local),
+      last_updated: nodeUpdatedAt(latest),
+      repositories: nodes.flatMap(node => Array.isArray(node.repositories) ? node.repositories : []),
+      _mergedCount: nodes.length,
+    };
+
+    const latestHasFetchError = Boolean(latest && latest.fetch_error);
+    merged.fetch_error = latestHasFetchError ? latest.fetch_error : '';
+    merged.version = firstKnownValue([primary.version, latest.version, ...nodes.map(node => node.version)]);
+    merged.node_id = firstKnownValue([primary.node_id, ...nodes.map(node => node.node_id)]);
+    merged.hostname = firstKnownValue([primary.hostname, ...nodes.map(node => node.hostname), displayUrl(primary.node_url)]);
+    merged.node_url = firstKnownValue([primary.node_url, ...nodes.map(node => node.node_url)]);
+    return merged;
+  }
+
+  function primaryNode(nodes) {
+    const local = nodes.find(node => node.is_local && !node.fetch_error);
+    if (local) return local;
+    const healthy = nodes.find(node => !node.fetch_error);
+    if (healthy) return healthy;
+    return nodes.reduce((current, node) => timeValue(nodeUpdatedAt(node)) > timeValue(nodeUpdatedAt(current)) ? node : current, nodes[0]);
+  }
+
+  function firstKnownValue(values) {
+    return values.find(value => {
+      const normalized = normalizedText(value);
+      return normalized && normalized !== 'unknown';
+    }) || '';
+  }
+
+  function renderRepository(status) {
+    const repo = status.Repository || {};
+    const item = createEl('section', 'repo');
+    const header = createEl('div', 'repo-header');
+
+    header.appendChild(createEl('h3', 'repo-title', repo.Name || 'repository'));
+    header.appendChild(repoBadges(status));
+    item.appendChild(header);
+    item.appendChild(metaEl(repoMeta(status)));
+
+    if (status.ErrorMessage) item.appendChild(errorBlock(status.ErrorMessage));
+
+    const tasks = taskStatuses(status);
+    if (tasks.length > 0) item.appendChild(renderTasks(tasks));
+    return item;
+  }
+
+  function repoBadges(status) {
+    const badges = createEl('div', 'badges');
+    const execution = String(status.ExecutionStatus || 'unknown').toLowerCase();
+    const hasResult = status.Success || status.ErrorMessage || ['pulled', 'ran', 'back-off'].includes(execution);
+
+    badges.appendChild(createEl('span', `badge ${status.Changed ? 'changed' : 'unchanged'}`, status.Changed ? 'changed' : 'unchanged'));
+    if (hasResult) badges.appendChild(createEl('span', `badge ${status.Success ? 'success' : 'error'}`, status.Success ? 'success' : 'error'));
+    badges.appendChild(createEl('span', `badge status status-${safeClass(execution)}`, execution));
+    return badges;
+  }
+
+  function repoMeta(status) {
+    const repo = status.Repository || {};
+    return [
+      { label: 'Version', value: status.Version || '' },
+      { label: 'Commit', value: status.Sha1 ? shortSha(status.Sha1) : '' },
+      { label: 'Time', value: status.Time ? fmtDate(status.Time) : '' },
+      { label: 'Attempt', value: status.Attempts ? String(status.Attempts) : '' },
+      { label: 'Ref', value: repo.Reference || '' },
+      { label: 'Config', value: repo.ConfigPath || '' },
+    ];
+  }
+
+  function renderTasks(tasks) {
+    const wrap = createEl('div', 'tasks');
+    const details = document.createElement('details');
+    details.appendChild(createEl('summary', null, `Tasks (${tasks.length})`));
+
+    tasks.forEach(taskStatus => {
+      const task = taskStatus.Task || {};
+      const row = createEl('div', 'task');
+      const title = createEl('div', 'task-title');
+      title.appendChild(createEl('span', null, task.Name || 'task'));
+      title.appendChild(createEl('span', `badge ${taskStatus.Success ? 'success' : 'error'}`, taskStatus.Success ? 'ok' : 'fail'));
+      row.appendChild(title);
+
+      const command = Array.isArray(task.Command) ? task.Command.join(' ') : '';
+      if (command) row.appendChild(createEl('code', 'command', command));
+      if (taskStatus.Output) row.appendChild(createEl('pre', 'task-output', String(taskStatus.Output)));
+      details.appendChild(row);
+    });
+
+    wrap.appendChild(details);
+    return wrap;
+  }
+
+  function latestRepositoryStatuses(statuses) {
+    // Dropshipper returns history; the UI only needs the newest row per repo/status/commit.
+    const latest = new Map();
+    const items = Array.isArray(statuses) ? statuses : [];
+
+    items.forEach(status => {
+      const key = JSON.stringify([
+        status.Repository && status.Repository.Name ? status.Repository.Name : 'repository',
+        status.ExecutionStatus || 'unknown',
+        status.Sha1 || 'NO_SHA',
+      ]);
+      const current = latest.get(key);
+      if (!current || timeValue(status.Time) >= timeValue(current.Time)) {
+        latest.set(key, status);
+      }
+    });
+
+    return Array.from(latest.values()).sort((a, b) => timeValue(b.Time) - timeValue(a.Time));
+  }
+
+  function taskStatuses(status) {
+    if (Array.isArray(status.TaskStatues)) return status.TaskStatues;
+    if (Array.isArray(status.TaskStatuses)) return status.TaskStatuses;
+    return [];
+  }
+
+  function errorBlock(message) {
+    return createEl('div', 'error-block', String(message));
+  }
+
+  function fmtDate(value) {
+    const time = timeValue(value);
+    return time ? new Date(time).toLocaleString() : String(value || '');
+  }
+
+  function timeValue(value) {
+    const time = Date.parse(value || '');
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  function nodeUpdatedAt(node) {
+    return (node && (node.last_updated || node.LastUpdated)) || '';
+  }
+
+  function normalizedText(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function normalizedNodeUrl(value) {
+    if (!value) return '';
+    try {
+      const url = new URL(value);
+      url.hash = '';
+      url.search = '';
+      url.hostname = url.hostname.toLowerCase();
+      url.pathname = url.pathname.replace(/\/+$/, '');
+      return url.toString().replace(/\/$/, '');
+    } catch (_) {
+      return String(value).trim().toLowerCase().replace(/\/+$/, '');
+    }
+  }
+
+  function normalizedUrlHost(value) {
+    if (!value) return '';
+    try {
+      return new URL(value).hostname.toLowerCase();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function shortSha(value) {
+    const sha = String(value || '');
+    if (!sha || sha === 'NO_SHA') return sha;
+    return sha.slice(0, 7);
+  }
+
+  function shortId(value) {
+    return String(value || '').slice(0, 8);
+  }
+
+  function displayUrl(value) {
+    if (!value) return '';
+    try {
+      const url = new URL(value);
+      return url.host;
+    } catch (_) {
+      return String(value).replace(/^https?:\/\//, '').replace(/\/$/, '');
+    }
+  }
+
+  function safeClass(value) {
+    return String(value || 'unknown').replace(/[^a-z0-9-]/g, '-');
+  }
+
+  function openOutputModal(text) {
+    if (!els.outputModal) return;
     els.modalOutput.textContent = text || '';
     els.outputModal.removeAttribute('hidden');
     document.body.classList.add('modal-open');
   }
-  function closeOutputModal(){
-    if(!els.outputModal) return;
+
+  function closeOutputModal() {
+    if (!els.outputModal) return;
     els.outputModal.setAttribute('hidden', '');
     document.body.classList.remove('modal-open');
-  }
-  // Modal event listeners
-  if(els.modalClose){ els.modalClose.addEventListener('click', closeOutputModal); }
-  if(els.outputModal){
-    els.outputModal.addEventListener('click', function(e){ if(e.target === els.outputModal){ closeOutputModal(); } });
-  }
-  if(els.cards){
-    els.cards.addEventListener('click', function(e){
-      const pre = e.target && e.target.closest ? e.target.closest('.task pre') : null;
-      if(pre){ openOutputModal(pre.textContent || ''); }
-    });
-  }
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && els.outputModal && !els.outputModal.hasAttribute('hidden')){ closeOutputModal(); }
-  });
-
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s]));
   }
 
   init();

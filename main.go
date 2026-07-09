@@ -50,37 +50,10 @@ func main() {
 	})
 
 	mux.HandleFunc("/proxy/gossip", func(w http.ResponseWriter, r *http.Request) {
-		base := r.URL.Query().Get("base")
-		if strings.TrimSpace(base) == "" {
-			base = getBaseAPIURL()
-		}
-		baseURL, err := sanitizeBaseURL(base)
-		if err != nil {
-			http.Error(w, "invalid base url: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		client := &http.Client{Timeout: 10 * time.Second}
-		req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, baseURL+"/gossip", nil)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return
-		}
-		defer resp.Body.Close()
-		if contentType := resp.Header.Get("Content-Type"); contentType != "" {
-			w.Header().Set("Content-Type", contentType)
-		} else {
-			w.Header().Set("Content-Type", "application/json")
-		}
-		w.WriteHeader(resp.StatusCode)
-		if _, err := io.Copy(w, io.LimitReader(resp.Body, maxProxyBody)); err != nil {
-			log.Printf("proxy copy failed: %v", err)
-		}
+		proxyDropshipper(w, r, "/gossip", http.MethodGet, 10*time.Second)
+	})
+	mux.HandleFunc("/proxy/resync", func(w http.ResponseWriter, r *http.Request) {
+		proxyDropshipper(w, r, "/resync", http.MethodPost, 10*time.Minute)
 	})
 
 	port := os.Getenv("PORT")
@@ -91,12 +64,52 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           logRequest(mux),
 		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		WriteTimeout:      10 * time.Minute,
 		IdleTimeout:       60 * time.Second,
 	}
 	log.Printf("Starting dropshipper UI v%s", version.VERSION)
 	log.Printf("Listening on http://localhost:%s", port)
 	log.Fatal(server.ListenAndServe())
+}
+
+func proxyDropshipper(w http.ResponseWriter, r *http.Request, targetPath, method string, timeout time.Duration) {
+	if r.Method != method {
+		w.Header().Set("Allow", method)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	base := r.URL.Query().Get("base")
+	if strings.TrimSpace(base) == "" {
+		base = getBaseAPIURL()
+	}
+	baseURL, err := sanitizeBaseURL(base)
+	if err != nil {
+		http.Error(w, "invalid base url: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	client := &http.Client{Timeout: timeout}
+	req, err := http.NewRequestWithContext(r.Context(), method, baseURL+targetPath, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+	if contentType := resp.Header.Get("Content-Type"); contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+	}
+	w.WriteHeader(resp.StatusCode)
+	if _, err := io.Copy(w, io.LimitReader(resp.Body, maxProxyBody)); err != nil {
+		log.Printf("proxy copy failed: %v", err)
+	}
 }
 
 func sanitizeBaseURL(base string) (string, error) {

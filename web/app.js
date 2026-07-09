@@ -10,6 +10,8 @@
     mergeNodesChk: document.getElementById('mergeNodesChk'),
     saveBtn: document.getElementById('saveBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
+    resyncBtn: document.getElementById('resyncBtn'),
+    shutdownBtn: document.getElementById('shutdownBtn'),
     autoRefreshChk: document.getElementById('autoRefreshChk'),
     intervalSelect: document.getElementById('intervalSelect'),
     cards: document.getElementById('cards'),
@@ -118,6 +120,8 @@
     els.baseUrlInput.addEventListener('input', updateApiLink);
     els.saveBtn.addEventListener('click', saveSettings);
     els.refreshBtn.addEventListener('click', refresh);
+    els.resyncBtn.addEventListener('click', resyncAll);
+    els.shutdownBtn.addEventListener('click', shutdownDropshipper);
     els.mergeNodesChk.addEventListener('change', () => {
       store.mergeNodes = els.mergeNodesChk.checked;
       refresh();
@@ -195,6 +199,18 @@
     return els.useProxyChk.checked ? `/proxy/gossip?base=${encodeURIComponent(baseUrl)}` : `${baseUrl}/gossip`;
   }
 
+  function resyncUrl() {
+    const baseUrl = normalizeBaseUrl(els.baseUrlInput.value || store.baseUrl);
+    if (!baseUrl) return '';
+    return els.useProxyChk.checked ? `/proxy/resync?base=${encodeURIComponent(baseUrl)}` : `${baseUrl}/resync`;
+  }
+
+  function shutdownUrl() {
+    const baseUrl = normalizeBaseUrl(els.baseUrlInput.value || store.baseUrl);
+    if (!baseUrl) return '';
+    return els.useProxyChk.checked ? `/proxy/shutdown?base=${encodeURIComponent(baseUrl)}` : `${baseUrl}/shutdown`;
+  }
+
   async function refresh() {
     let url = '';
     try {
@@ -221,6 +237,87 @@
       setStatus(`Updated at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       setStatus(`Failed to load gossip: ${error.message || error}`, false);
+    }
+  }
+
+  async function resyncAll() {
+    let url = '';
+    try {
+      url = resyncUrl();
+    } catch (error) {
+      setStatus(error.message, false);
+      return;
+    }
+    if (!url) {
+      setStatus('Please set the Base API URL.', false);
+      return;
+    }
+    if (!window.confirm('Delete all configured local repos and re-sync them now?')) return;
+
+    els.resyncBtn.disabled = true;
+    setStatus('Deleting local repos and re-syncing...');
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 10 * 60 * 1000);
+      let text = '';
+      try {
+        const res = await fetch(url, { method: 'POST', cache: 'no-store', signal: controller.signal });
+        text = await res.text();
+        if (!res.ok) throw new Error(text.trim() || `HTTP ${res.status}`);
+      } finally {
+        window.clearTimeout(timeout);
+      }
+
+      let countText = '';
+      if (text) {
+        try {
+          const payload = JSON.parse(text);
+          const statuses = Array.isArray(payload.Statuses) ? payload.Statuses : payload.statuses;
+          if (Array.isArray(statuses)) countText = ` (${statuses.length} repos)`;
+        } catch (_) {
+          // The action succeeded; ignore an unexpected response shape.
+        }
+      }
+      setStatus(`Re-sync completed${countText}. Refreshing...`);
+      await refresh();
+    } catch (error) {
+      setStatus(`Failed to re-sync: ${error.message || error}`, false);
+    } finally {
+      els.resyncBtn.disabled = false;
+    }
+  }
+
+  async function shutdownDropshipper() {
+    let url = '';
+    try {
+      url = shutdownUrl();
+    } catch (error) {
+      setStatus(error.message, false);
+      return;
+    }
+    if (!url) {
+      setStatus('Please set the Base API URL.', false);
+      return;
+    }
+    if (!window.confirm('Request a graceful shutdown of Dropshipper now?')) return;
+
+    els.shutdownBtn.disabled = true;
+    setStatus('Requesting Dropshipper shutdown...');
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(url, { method: 'POST', cache: 'no-store', signal: controller.signal });
+        const text = await res.text();
+        if (!res.ok) throw new Error(text.trim() || `HTTP ${res.status}`);
+      } finally {
+        window.clearTimeout(timeout);
+      }
+
+      setStatus('Shutdown requested. Dropshipper API should stop shortly.');
+    } catch (error) {
+      setStatus(`Failed to request shutdown: ${error.message || error}`, false);
+      els.shutdownBtn.disabled = false;
     }
   }
 

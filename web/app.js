@@ -11,6 +11,7 @@
     saveBtn: document.getElementById('saveBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
     resyncBtn: document.getElementById('resyncBtn'),
+    shutdownBtn: document.getElementById('shutdownBtn'),
     autoRefreshChk: document.getElementById('autoRefreshChk'),
     intervalSelect: document.getElementById('intervalSelect'),
     cards: document.getElementById('cards'),
@@ -120,6 +121,7 @@
     els.saveBtn.addEventListener('click', saveSettings);
     els.refreshBtn.addEventListener('click', refresh);
     els.resyncBtn.addEventListener('click', resyncAll);
+    els.shutdownBtn.addEventListener('click', shutdownDropshipper);
     els.mergeNodesChk.addEventListener('change', () => {
       store.mergeNodes = els.mergeNodesChk.checked;
       refresh();
@@ -203,6 +205,12 @@
     return els.useProxyChk.checked ? `/proxy/resync?base=${encodeURIComponent(baseUrl)}` : `${baseUrl}/resync`;
   }
 
+  function shutdownUrl() {
+    const baseUrl = normalizeBaseUrl(els.baseUrlInput.value || store.baseUrl);
+    if (!baseUrl) return '';
+    return els.useProxyChk.checked ? `/proxy/shutdown?base=${encodeURIComponent(baseUrl)}` : `${baseUrl}/shutdown`;
+  }
+
   async function refresh() {
     let url = '';
     try {
@@ -276,6 +284,40 @@
       setStatus(`Failed to re-sync: ${error.message || error}`, false);
     } finally {
       els.resyncBtn.disabled = false;
+    }
+  }
+
+  async function shutdownDropshipper() {
+    let url = '';
+    try {
+      url = shutdownUrl();
+    } catch (error) {
+      setStatus(error.message, false);
+      return;
+    }
+    if (!url) {
+      setStatus('Please set the Base API URL.', false);
+      return;
+    }
+    if (!window.confirm('Request a graceful shutdown of Dropshipper now?')) return;
+
+    els.shutdownBtn.disabled = true;
+    setStatus('Requesting Dropshipper shutdown...');
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(url, { method: 'POST', cache: 'no-store', signal: controller.signal });
+        const text = await res.text();
+        if (!res.ok) throw new Error(text.trim() || `HTTP ${res.status}`);
+      } finally {
+        window.clearTimeout(timeout);
+      }
+
+      setStatus('Shutdown requested. Dropshipper API should stop shortly.');
+    } catch (error) {
+      setStatus(`Failed to request shutdown: ${error.message || error}`, false);
+      els.shutdownBtn.disabled = false;
     }
   }
 

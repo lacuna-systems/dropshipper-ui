@@ -11,6 +11,7 @@ The UI mirrors the data exposed by `dropshipper`: nodes contain repository statu
 - Optional `/proxy/gossip` endpoint for avoiding CORS issues
 - Manual refresh and optional auto refresh
 - Manual delete-and-re-sync trigger for all configured Dropshipper repos
+- Manual graceful shutdown trigger for the Dropshipper service
 - Node, repository, execution status, commit, attempt, version, error, and task output display
 - Optional node merging by node ID, hostname, node URL, or node URL host
 - Supports the Dropshipper wire field `TaskStatues`, plus `TaskStatuses` as a tolerant fallback
@@ -45,6 +46,7 @@ Browser settings are persisted in `localStorage`:
 - `/config`: returns `{ "baseApiUrl": "...", "version": "..." }`
 - `/proxy/gossip?base={BASE_URL}`: proxies `{BASE_URL}/gossip`
 - `POST /proxy/resync?base={BASE_URL}`: proxies `{BASE_URL}/resync`
+- `POST /proxy/shutdown?base={BASE_URL}`: proxies `{BASE_URL}/shutdown`
 
 ## Data Handling
 

@@ -55,6 +55,9 @@ func main() {
 	mux.HandleFunc("/proxy/resync", func(w http.ResponseWriter, r *http.Request) {
 		proxyDropshipper(w, r, "/resync", http.MethodPost, 10*time.Minute)
 	})
+	mux.HandleFunc("/proxy/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		proxyDropshipper(w, r, "/shutdown", http.MethodPost, 15*time.Second)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
